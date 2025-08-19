@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdSurvTrainMapper">
+
+	<select id="listTrain" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH BASE AS (
+		SELECT	A.RECEIPTSEQ
+			  , A.TRAININGSEQ
+			  , TO_CHAR(TO_DATE(A.TRDATE,'YYMMDD'),'YY.MM.DD.') AS TRDATE
+			  , A.SCHCD
+			  , A.ORGCD
+			  , SP_CODENAME_FU(B.SURVSEQ, B.SURVKINDCD, '1001', A.ORGCD) AS ORGNM
+			  , DECODE(A.USERGRPTYPE,4,'취업담당자',5,'전산담당자') AS USERGRPTYPE
+			  , A.USERNM
+			  , A.USEREMAIL
+			  , A.USERTELNO
+			  , A.USERMOBILE
+			  , TO_CHAR(A.RECEIPTDATETIME,'YY.MM.DD.') AS RECEIPTDATETIME
+			  , A.TRRESULT
+			  , C.SCHNM
+			  , B.TRAININGNM
+			  , B.SURVKINDCD
+			  , B.SURVSEQ
+		FROM    TMAD_TRAININGRST A
+		      , TMAD_TRAININGNEW B
+		      , (SELECT DISTINCT SCHCD,SURVSEQ ,SURVKINDCD, SCHNM, SCHKINDCD,ORGCD FROM TMAD_SCHOOL) C
+		WHERE A.TRAININGSEQ = B.TRAININGSEQ
+			  AND A.SCHCD = C.SCHCD
+			  AND A.ORGCD = C.ORGCD
+			  AND B.SURVKINDCD = C.SURVKINDCD
+			  AND B.SURVSEQ=C.SURVSEQ
+		      AND USERNM IS NOT NULL
+        <if test="SURVSEQ != null">
+			AND B.SURVSEQ = #{SURVSEQ} 
+		</if>				
+		<if test="SURVKINDCD != null">
+			AND B.SURVKINDCD = #{SURVKINDCD}
+		</if>	
+		<if test="CDNM != null">
+			AND C.SCHKINDCD = #{CDNM}
+		</if>
+		<if test="SCHNM != null">
+			AND C.SCHNM LIKE  '%' || #{SCHNM} || '%'
+		</if>	
+		<if test="USERNM != null">
+			AND A.USERNM LIKE  '%' || #{USERNM} || '%'
+		</if>	
+		)
+		SELECT * FROM 
+			(
+				SELECT ROWNUM AS RNUM, T1.* FROM BASE T1
+				ORDER BY T1.SCHCD, T1.RECEIPTSEQ
+			)
+		WHERE RNUM BETWEEN #{START} AND #{END}						
+	</select>	
+	
+	<select id="listTrainTOTALPAGECNT" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT COUNT(*) TOTALPAGECNT
+		FROM    TMAD_TRAININGRST A
+		      , TMAD_TRAININGNEW B
+		      , (SELECT DISTINCT SCHCD,SURVSEQ ,SURVKINDCD, SCHNM, SCHKINDCD,ORGCD FROM TMAD_SCHOOL) C
+		WHERE A.TRAININGSEQ = B.TRAININGSEQ
+			  AND A.SCHCD = C.SCHCD
+			  AND A.ORGCD = C.ORGCD
+			  AND B.SURVKINDCD = C.SURVKINDCD
+			  AND B.SURVSEQ=C.SURVSEQ
+		      AND USERNM IS NOT NULL
+		<if test="SURVSEQ != null">
+			AND B.SURVSEQ = #{SURVSEQ} 
+		</if>				
+		<if test="SURVKINDCD != null">
+			AND B.SURVKINDCD = #{SURVKINDCD}
+		</if>	
+		<if test="CDNM != null">
+			AND C.SCHKINDCD = #{CDNM}
+		</if>
+		<if test="SCHNM != null">
+			AND C.SCHNM LIKE  '%' || #{SCHNM} || '%'
+		</if>	
+		<if test="USERNM != null">
+			AND A.USERNM LIKE  '%' || #{USERNM} || '%'
+		</if>				
+	</select>	
+	
+	<select id="listTrainFile" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT	A.RECEIPTSEQ
+			  , A.TRAININGSEQ
+			  , TO_CHAR(TO_DATE(A.TRDATE,'YYMMDD'),'YY.MM.DD.') AS TRDATE
+			  , A.SCHCD
+			  , A.ORGCD
+			  , decode(A.USERGRPTYPE,4,'취업담당자',5,'전산담당자') AS USERGRPTYPE
+			  , A.USERNM
+			  , A.USEREMAIL
+			  , A.USERTELNO
+			  , A.USERMOBILE
+			  , TO_CHAR(A.RECEIPTDATETIME,'YY.MM.DD.') AS RECEIPTDATETIME
+			  , A.TRRESULT
+			  , C.SCHNM
+			  , B.TRAININGNM
+			  , B.SURVKINDCD
+			  , B.SURVSEQ
+			  , D.CDNM
+		FROM    TMAD_TRAININGRST A
+		      , TMAD_TRAININGNEW B
+		      , (SELECT DISTINCT SCHCD,SURVSEQ ,SURVKINDCD, SCHNM, SCHKINDCD,ORGCD FROM TMAD_SCHOOL) C
+		WHERE A.TRAININGSEQ = B.TRAININGSEQ
+			  AND A.SCHCD = C.SCHCD
+			  AND A.ORGCD = C.ORGCD
+			  AND B.SURVKINDCD = C.SURVKINDCD
+			  AND B.SURVSEQ=C.SURVSEQ
+		      AND USERNM IS NOT NULL
+        <if test="SURVSEQ != null">
+			AND B.SURVSEQ = #{SURVSEQ} 
+		</if>				
+		<if test="SURVKINDCD != null">
+			AND B.SURVKINDCD = #{SURVKINDCD}
+		</if>	
+		<if test="CDNM != null">
+			AND C.SCHKINDCD = #{CDNM}
+		</if>
+		<if test="SCHNM != null">
+			AND C.SCHNM LIKE  '%' || #{SCHNM} || '%'
+		</if>	
+		<if test="USERNM != null">
+			AND A.USERNM LIKE  '%' || #{USERNM} || '%'
+		</if>	
+		ORDER BY A.SCHCD, A.RECEIPTSEQ      	
+	</select>
+	
+	<insert id="insertTrain" parameterType="java.util.Map" flushCache="true">
+		<selectKey resultType="int" keyProperty="seq" order="BEFORE">
+	       SELECT NVL(MAX(RECEIPTSEQ),0)+1 FROM TMAD_TRAININGRST    
+	    </selectKey> 	
+			MERGE INTO TMAD_TRAININGRST S
+		    USING DUAL 
+		      	ON (    NVL(S.USERNM, -1)     = NVL(#{USERNM}, -1) 
+		      		AND NVL(S.USEREMAIL, -1)  = NVL(#{USEREMAIL}, -1)
+			       	AND NVL(S.USERTELNO, -1)  = NVL(#{USERTELNO}, -1)
+			       	AND NVL(S.USERMOBILE, -1) = NVL(#{USERMOBILE}, -1)
+		       )
+		    WHEN MATCHED THEN
+		    	<if test="TRRESULT == '참석' || TRRESULT == null">
+				UPDATE SET S.TRRESULT = #{TRRESULT}
+				</if>
+				
+		    <!-- WHEN NOT MATCHED THEN
+		        INSERT INSERT (RECEIPTSEQ, TRAININGSEQ, TRDATE, SCHCD, ORGCD,USERGRPTYPE, USERNM, USEREMAIL, USERTELNO, USERMOBILE, RECEIPTDATETIME, TRRESULT)  
+		        VALUES (#{seq}, #{TRAININGSEQ}, REPLACE(#{TRDATE},'.',''), #{SCHCD}, #{ORGCD}, decode(#{USERGRPTYPE},'전산담당자',5,'취업담당자',4), #{USERNM}, #{USEREMAIL}, #{USERTELNO}, #{USERMOBILE}, SYSDATE, 0)  -->
+	</insert>	
+		
+	<delete id="deleteTrain" parameterType="java.util.Map" flushCache="true">
+		DELETE FROM TMAD_TRAINING WHERE TRAININGSEQ = #{TRAININGSEQ}
+	</delete>	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	<select id="listTrainNew" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH BASE AS (
+			SELECT
+				TRAININGSEQ
+				,'20'||SUBSTR(SURVSEQ,1,2) SURVYEAR
+				, SURVSEQ
+				, SURVKINDCD
+				, TRAININGNM TITLE
+				, '20'||TRAININGSDATE TRSDATE
+				, '20'||TRAININGEDATE TREDATE
+				, decode(TRAININGSDATE,TRAININGEDATE,TRAININGSDATE,TRAININGSDATE||'~'||TRAININGEDATE) as TRAININGDATE
+				, PLACE
+				, MAXCNT
+				, MAXCNT||'명' as maxcntText
+				, '20'||RECEIPTSDATE RCSDATE
+				, '20'||RECEIPTEDATE RCEDATE
+                , decode(RECEIPTSDATE,RECEIPTEDATE,RECEIPTSDATE,RECEIPTSDATE||'~'||RECEIPTEDATE) as RECEIPTDATE
+                , CHKACTIVE
+                , decode(CHKACTIVE,'1','활성','') as CHKACTIVETEXT
+			FROM TMAD_TRAININGNEW
+			WHERE 1=1
+			<if test="SURVSEQ != null">
+				AND SURVSEQ = #{SURVSEQ} 
+			</if>				
+			<if test="SURVKINDCD != null">
+				AND SURVKINDCD = #{SURVKINDCD}
+			</if>	
+		)
+		SELECT * FROM 
+			(
+				SELECT ROWNUM AS RNUM, T1.* FROM BASE T1
+			)
+		WHERE RNUM BETWEEN #{START} AND #{END}						
+	</select>	
+	
+	<select id="listTrainNewTOTALPAGECNT" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT COUNT(*) TOTALPAGECNT
+		FROM TMAD_TRAININGNEW
+		WHERE 1=1
+		<if test="SURVSEQ != null">
+			AND SURVSEQ = #{SURVSEQ} 
+		</if>				
+		<if test="SURVKINDCD != null">
+			AND SURVKINDCD = #{SURVKINDCD}
+		</if>	
+	</select>	
+	
+	<select id="listTrainNewFile" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			TRAININGSEQ
+			,SURVSEQ
+			,SURVKINDCD
+			,TRAININGNM
+			,TRAININGDATE
+			,SCHKINDNM
+			,SCHNM
+			,ORGNM
+			,DAMDANGNM
+			,TRAININGYN
+			,NM1
+			,NM2
+			,NM3
+			,NM4
+			,NM5
+			,WORKERID
+			,WORKDTHM
+			,MODIFIERID
+			,MODDTHM
+		FROM TMAD_TRAINING
+		WHERE 1=1
+		<if test="SCHKINDCD != null">
+			AND SCHKINDCD = #{SCHKINDCD} 
+		</if>				
+		<if test="SURVPROSTATUSCD != null">
+			AND SURVPROSTATUSCD = #{SURVPROSTATUSCD}
+		</if>	
+		<if test="SCHNM != null">
+			AND SCHNM LIKE  '%' || #{SCHNM} || '%'
+		</if>	
+		<if test="SCHKINDNM != null">
+			AND SCHKINDNM LIKE  '%' || #{SCHKINDNM} || '%'
+		</if>	
+	</select>
+	
+	<insert id="insertTrainNew" parameterType="java.util.Map" flushCache="true">
+		<selectKey resultType="int" keyProperty="seq" order="BEFORE">
+	        SELECT NVL(MAX(TRAININGSEQ), 0)+1 FROM TMAD_TRAINING    
+	    </selectKey> 	
+			MERGE INTO TMAD_TRAINING S
+		    USING DUAL 
+		       ON (S.SURVSEQ = #{SURVSEQ} AND S.SURVKINDCD = #{SURVKINDCD}
+		       	AND S.TRAININGNM = #{TRAININGNM} AND S.TRAININGDATE = #{TRAININGDATE}
+		       	AND S.SCHKINDNM = #{SCHKINDNM} AND S.SCHNM = #{SCHNM}
+		       	AND S.ORGNM = #{ORGNM} AND S.DAMDANGNM = #{DAMDANGNM}
+		       )
+		    WHEN MATCHED THEN
+		        UPDATE SET S.MODIFIERID = #{USERID}
+		        			,S.MODDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (RECEIPTSEQ, TRAININGSEQ, TRDATE, SCHCD, ORGCD,USERGRPTYPE, USERNM, USEREMAIL, USERTELNO, USERMOBILE, RECEIPTDATETIME, TRRESULT) 
+		        VALUES (#{seq},#{SURVSEQ},#{SURVKINDCD},#{TRAININGNM},#{TRAININGDATE},#{SCHKINDNM},#{SCHNM},#{ORGNM},#{DAMDANGNM},#{TRAININGYN},#{NM1},#{NM2},#{NM3},#{NM4},#{NM5},#{USERID},SYSDATE,#{USERID},SYSDATE )
+	</insert>	
+		
+	<delete id="deleteTrainNew" parameterType="java.util.Map" flushCache="true">
+		DELETE FROM TMAD_TRAINING WHERE TRAININGSEQ = #{TRAININGSEQ}
+	</delete>		
+		
+		
+	<insert id="createTrainingNew" parameterType="java.util.Map">
+			INSERT INTO TMAD_TRAININGNEW
+			( 
+				TRAININGSEQ
+				, SURVSEQ
+				, SURVKINDCD
+				, TRAININGNM
+				, TRAININGSDATE
+				, TRAININGEDATE
+				, PLACE
+				, MAXCNT
+				, RECEIPTSDATE
+				, RECEIPTEDATE
+				, CHKACTIVE 				
+			)
+			VALUES
+			(
+				decode((select max(TRAININGSEQ) from tmad_trainingnew),null,1,(select max(TRAININGSEQ) from tmad_trainingnew)+1) 
+				, #{SURVSEQ}
+				, #{SURVKINDCD}
+				, #{TRAININGNM}
+				, #{TRAININGSDATE}
+				, #{TRAININGEDATE}
+				, #{PLACE}
+				, #{MAXCNT}
+				, #{RECEIPTSDATE}
+				, #{RECEIPTEDATE}
+				, #{CHKACTIVE} 				
+			)	
+    </insert>	
+    
+    <insert id="mergeTrainingNew" parameterType="java.util.Map">
+		MERGE INTO TMAD_TRAININGNEW S
+	    USING DUAL 
+	       ON (S.TRAININGSEQ = #{TRAININGSEQ})
+	    WHEN MATCHED THEN
+	        UPDATE SET 
+                S.SURVSEQ = #{SURVSEQ}
+                , S.SURVKINDCD = #{SURVKINDCD}
+                , S.TRAININGNM = #{TITLE}
+                , S.TRAININGSDATE = SUBSTR(#{TRSDATE},3,6)
+                , S.TRAININGEDATE = SUBSTR(#{TREDATE},3,6)
+                , S.PLACE = #{PLACE}
+                , S.MAXCNT = #{MAXCNT}
+                , S.RECEIPTSDATE = SUBSTR(#{RCSDATE},3,6)
+                , S.RECEIPTEDATE = SUBSTR(#{RCEDATE},3,6)
+                , S.CHKACTIVE  = #{CHKACTIVE}
+	    WHEN NOT MATCHED THEN
+	        INSERT 
+	        ( 
+	        	S.TRAININGSEQ, S.SURVSEQ, S.SURVKINDCD, S.TRAININGNM, S.TRAININGSDATE, S.TRAININGEDATE, S.PLACE, S.MAXCNT, S.RECEIPTSDATE, S.RECEIPTEDATE, S.CHKACTIVE 
+	        ) 
+	        VALUES 
+	        ( 
+	        	DECODE((SELECT MAX(TRAININGSEQ)+1 from TMAD_TRAININGNEW),null,1,(SELECT MAX(TRAININGSEQ)+1 from TMAD_TRAININGNEW)+1), #{SURVSEQ}, #{SURVKINDCD}, #{TITLE}, SUBSTR(#{TRSDATE},3,6), SUBSTR(#{TREDATE},3,6), #{PLACE}, #{MAXCNT}, SUBSTR(#{RCSDATE},3,6), SUBSTR(#{RCEDATE},3,6), #{CHKACTIVE} 
+	        )
+	</insert>
+	
+	<select id="listTrainRst" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH BASE AS (
+			SELECT
+			    RST.RECEIPTSEQ
+			    , RST.TRAININGSEQ
+			    , RST.TRDATE
+			    , SP_GET_SCHNM(TR.SURVSEQ,TR.SURVKINDCD,RST.SCHCD) SCHNM
+			    , (SELECT CDNM FROM TCCM_CODE WHERE TCCM_CODE.SURVSEQ=TR.SURVSEQ AND TCCM_CODE.SURVKINDCD=TR.SURVKINDCD AND TCCM_CODE.CDTYPE='1001' AND TCCM_CODE.CD=RST.ORGCD) ORGNM
+			    , (SELECT CDNM FROM TCCM_CODE WHERE TCCM_CODE.SURVSEQ=TR.SURVSEQ AND TCCM_CODE.SURVKINDCD=TR.SURVKINDCD AND TCCM_CODE.CDTYPE='0104' AND TCCM_CODE.CD=RST.USERGRPTYPE) USERGRPNM
+			    , RST.USERNM
+			    , RST.USEREMAIL
+			    , RST.USERTELNO
+			    , RST.USERMOBILE
+			    , TO_CHAR(RST.RECEIPTDATETIME,'YYYY-mm-dd hh:ii:ss') RECEIPTDATETIME
+			    , DECODE(RST.TRRESULT,'1','참석',' ') TRRESULT 
+			FROM 
+				TMAD_TRAININGRST RST 
+				LEFT OUTER JOIN TMAD_TRAININGNEW TR ON RST.TRAININGSEQ=TR.TRAININGSEQ
+			WHERE 
+				1=1
+			<if test="SURVSEQ != null">
+				AND TR.SURVSEQ = #{SURVSEQ} 
+			</if>				
+			<if test="SURVKINDCD != null">
+				AND TR.SURVKINDCD = #{SURVKINDCD}
+			</if>	
+		)
+		SELECT * FROM 
+			(
+				SELECT ROWNUM AS RNUM, T1.* FROM BASE T1
+			)
+	</select>	
+	
+	<select id="listTrainDownload" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH BASE AS (
+			SELECT
+				RST.TRAININGSEQ
+				, RST.RECEIPTSEQ
+				, RST.TRDATE
+				, RST.SCHCD
+				, RST.ORGCD
+				, RST.USERGRPTYPE
+				, RST.USERNM
+				, RST.USEREMAIL
+				, RST.USERTELNO
+				, RST.USERMOBILE
+				, RST.TRRESULT
+			FROM 
+				TMAD_TRAININGRST RST
+				LEFT OUTER JOIN TMAD_TRAININGNEW TR ON RST.TRAININGSEQ=TR.TRAININGSEQ
+			WHERE 1=1
+			<if test="SURVSEQ != null">
+				AND TR.SURVSEQ = #{SURVSEQ} 
+			</if>				
+			<if test="SURVKINDCD != null">
+				AND TR.SURVKINDCD = #{SURVKINDCD}
+			</if>	
+		)
+		SELECT * FROM 
+			(
+				SELECT ROWNUM AS RNUM, T1.* FROM BASE T1
+			)
+	</select>	
+	
+	<update id="updateTrainRst" parameterType="java.util.Map" flushCache="true">
+			UPDATE TMAD_TRAININGRST 
+			SET TRRESULT = #{TRRESULT}
+			 WHERE 					 
+				TRAININGSEQ = #{TRAININGSEQ}
+				AND RECEIPTSEQ = #{RECEIPTSEQ}	
+	</update>	
+		
+	<select id="getTrainingOne" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			TRAININGSEQ
+			,'20'||SUBSTR(SURVSEQ,1,2) SURVYEAR
+			, SURVSEQ
+			, SURVKINDCD
+			, TRAININGNM TITLE
+			, '20'||TRAININGSDATE TRSDATE
+			, '20'||TRAININGEDATE TREDATE
+			, decode(TRAININGSDATE,TRAININGEDATE,TO_CHAR(TO_DATE(TRAININGSDATE,'YYMMDD'),'YY.MM.DD.(dy)','NLS_DATE_LANGUAGE=korean'),TO_CHAR(TO_DATE(TRAININGSDATE,'YYMMDD'),'YY.MM.DD.(dy)','NLS_DATE_LANGUAGE=korean')||'~'||TO_CHAR(TO_DATE(TRAININGEDATE,'YYMMDD'),'YY.MM.DD.(dy)','NLS_DATE_LANGUAGE=korean')) as TRAININGDATE
+			, PLACE
+			, MAXCNT
+			, MAXCNT as maxcntText
+			, '20'||RECEIPTSDATE RCSDATE
+			, '20'||RECEIPTEDATE RCEDATE
+            , decode(RECEIPTSDATE,RECEIPTEDATE,TO_CHAR(TO_DATE(RECEIPTSDATE,'YYMMDD'),'YY.MM.DD.(dy)','NLS_DATE_LANGUAGE=korean'),TO_CHAR(TO_DATE(RECEIPTSDATE,'YYMMDD'),'YY.MM.DD.(dy)','NLS_DATE_LANGUAGE=korean')||'~'||TO_CHAR(TO_DATE(RECEIPTEDATE,'YYMMDD'),'YY.MM.DD.(dy)','NLS_DATE_LANGUAGE=korean')) as RECEIPTDATE
+            , CHKACTIVE
+            , decode(CHKACTIVE,'1','활성','') as CHKACTIVETEXT
+		FROM 
+			TMAD_TRAININGNEW
+		WHERE 
+			1=1
+			AND CHKACTIVE='1'
+			AND ROWNUM='1'
+		
+	</select>
+	
+	<select id="getTrainingDate" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			TO_CHAR(TO_DATE(TRAININGSDATE,'YYMMDD'),'YY.MM.DD.') TRDATECD
+		    , '20'||TRAININGSDATE TRDATENM
+		FROM 
+		    TMAD_TRAININGNEW
+		WHERE 
+		    1=1
+		    AND CHKACTIVE='1'
+		    AND ROWNUM='1'
+		union all
+		SELECT
+			TO_CHAR(TO_DATE(TRAININGEDATE,'YYMMDD'),'YY.MM.DD.') TRDATECD
+		    , '20'||TRAININGEDATE TRDATENM
+		FROM 
+		    TMAD_TRAININGNEW
+		WHERE 
+		    1=1
+		    AND CHKACTIVE='1'
+		    AND ROWNUM='1'
+	</select>
+	
+	<select id="getTrainingType" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			'4' USERGRPTYPE, '취업담당자' USERGRPTYPENM
+		FROM 
+			DUAL
+		union all
+		SELECT
+			'6' USERGRPTYPE, '학과담당자' USERGRPTYPENM
+		FROM 
+			DUAL
+	</select>
+			
+	<select id="getTrainingCnt" parameterType="java.util.Map" resultType="java.util.Map">
+		select 
+		    (count(*)+1) as MAXCNT
+		from 
+		    tmad_user USR
+		    , tmad_userschool USCH
+		    , tmad_school SCH
+		where 
+		    USR.usergrptype='4' 
+		    and USR.workyn='1' 
+		    and USR.userid=#{USERID}
+		    and SCH.survseq=#{SURVSEQ}
+		    and SCH.survkindcd=#{SURVKINDCD}
+		    and USR.userid=USCH.userid
+		    and SCH.SCHCD = USCH.SCHCD
+		    and SCH.ORGCD = USCH.ORGCD
+		ORDER BY
+		    USCH.SCHCD
+		    , USCH.ORGCD
+	</select>
+	
+	<select id="getExistTrainingCnt" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			(count(*)) AS MAXCNT
+		FROM
+			tmad_user USR ,
+			tmad_userschool USCH ,
+			tmad_school SCH,
+			(SELECT * FROM TMAD_TRAININGRST WHERE 1=1 AND TRAININGSEQ = #{TRSEQ}) TRAIN
+		WHERE
+			USR.usergrptype = '4'
+			AND USR.workyn = '1'
+			and USR.userid=#{USERID}
+		    and SCH.survseq=#{SURVSEQ}
+		    and SCH.survkindcd=#{SURVKINDCD}
+			AND USR.userid = USCH.userid
+			AND SCH.SCHCD = USCH.SCHCD
+			AND SCH.SCHCD = TRAIN.SCHCD
+			AND SCH.ORGCD = USCH.ORGCD
+			AND SCH.ORGCD = TRAIN.ORGCD
+		ORDER BY
+			USCH.SCHCD ,USCH.ORGCD 
+	</select>
+				
+	<select id="getTrainingResult" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			RECEIPTSEQ,
+			TRAININGSEQ,
+			TO_CHAR(TO_DATE(TRDATE,'YYMMDD'),'YY.MM.DD.') AS TRDATE,
+			SCHCD,
+			ORGCD,
+			decode(USERGRPTYPE,4,'취업담당자',5,'전산담당자',6,'학과담당자') AS USERGRPTYPE,
+			USERNM,
+			USEREMAIL,
+			USERTELNO,
+			USERMOBILE,
+			RECEIPTDATETIME,
+			TRRESULT
+		FROM 
+			TMAD_TRAININGRST 
+		WHERE 
+			1=1
+			AND TRAININGSEQ=#{TRAININGSEQ}
+			AND SCHCD=#{SCHCD}
+			AND ORGCD=#{ORGCD}
+		ORDER BY TRDATE,RECEIPTSEQ
+	</select>
+			
+	<select id="setTrainingResult" parameterType="java.util.Map" resultType="java.util.Map">
+		INSERT INTO TMAD_TRAININGRST
+			(RECEIPTSEQ, TRAININGSEQ, TRDATE, SCHCD, ORGCD,USERGRPTYPE, USERNM, USEREMAIL, USERTELNO, USERMOBILE, RECEIPTDATETIME, TRRESULT)
+		VALUES
+			((SELECT NVL(MAX(RECEIPTSEQ),0)+1 FROM TMAD_TRAININGRST T), #{TRAININGSEQ}, REPLACE(#{TRDATE},'.',''), #{SCHCD}, #{ORGCD}, decode(#{USERGRPTYPE},'학과담당자',6,'전산담당자',5,'취업담당자',4), #{USERNM}, #{USEREMAIL}, #{USERTELNO}, #{USERMOBILE}, SYSDATE, null) 
+	</select>
+	
+	<update id="updateTrainingResult" parameterType="java.util.Map">
+		UPDATE TMAD_TRAININGRST
+		SET TRDATE = REPLACE(#{TRDATE},'.',''),
+		    USERGRPTYPE =  decode(#{USERGRPTYPE},'학과담당자',6,'전산담당자',5,'취업담당자',4),
+		    USERNM = #{USERNM},
+		    USEREMAIL = #{USEREMAIL},
+		    USERTELNO = #{USERTELNO},
+		    USERMOBILE = #{USERMOBILE}
+		 WHERE 					 
+			RECEIPTSEQ = #{RECEIPTSEQ}	
+	</update>	
+	
+</mapper>

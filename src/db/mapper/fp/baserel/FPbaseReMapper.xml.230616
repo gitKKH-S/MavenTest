@@ -1,0 +1,1374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="FPbaseReMapper">
+	
+	<!--  학교목록 별 처리상태 -->
+	<select id="selectChargeSchoolList" parameterType="java.util.Map" resultType="java.util.Map">
+	
+		SELECT SURVSEQ
+		     , SURVKINDCD
+		     , SCHCD
+		     , ORGCD
+		     , SURVPROSTATUSCD
+		     , CHGCOMYN
+		     , SCHNM
+		     , ORGNM
+		     , SURVPROSTATUSNM
+		     , SURVSTRTDT
+		     , SURVENDDT
+		     , TO_DATE
+		     , NUMCANCEL
+		     , NUMEXAMDT
+		     , INFOREGDT
+		     , INFOSENDDT
+		     , INFOINFODT
+		     , INFOAPPRODT
+		  FROM (
+		        SELECT A.SURVSEQ
+		             , A.SURVKINDCD           
+		             , A.SCHCD
+		             , A.ORGCD
+		             , A.SURVPROSTATUSCD
+		             , CASE  A.CHGCOMYN WHEN '1' THEN '1' ELSE '2' END AS CHGCOMYN            
+		             , ( SELECT SCHNM  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD ) SCHNM 
+		             , SP_CODENAME_FU(A.SURVSEQ, A.SURVKINDCD,'1001', A.ORGCD) AS ORGNM
+		             , SP_CODENAME_FU(A.SURVSEQ, A.SURVKINDCD,#{STATUSparamCD}, A.SURVPROSTATUSCD) AS SURVPROSTATUSNM
+		             , ( SELECT SURVSTRTDT  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD ) SURVSTRTDT
+		             , ( SELECT SURVENDDT  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD ) SURVENDDT
+		             , TO_CHAR(SYSDATE,'YYYYMMDD') AS TO_DATE
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '5'   
+		               ) NUMCANCEL 
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '4'   
+		               ) NUMEXAMDT
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI') FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '7' 
+		               ) INFOREGDT
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '11' 
+		               ) INFOSENDDT    
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '9' 
+		               ) INFOINFODT    
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '12' 
+		               ) INFOAPPRODT
+		            FROM (           
+		                  SELECT SH.SURVSEQ
+                               , SH.SURVKINDCD
+                               , SH.SCHCD
+                               , SH.ORGCD
+                               , ( SELECT CHGCOMYN  FROM TMAD_USERSCHOOL WHERE SCHCD = SH.SCHCD  AND ORGCD = SH.ORGCD AND USERGRPTYPE ='4' )  CHGCOMYN 
+                               , ( SELECT SURVPROSTATUSCD  FROM TMAD_SCHOOL WHERE SCHCD = SH.SCHCD AND ORGCD = SH.ORGCD AND  
+                                                  SURVSEQ = SH.SURVSEQ AND  SURVKINDCD = SH.SURVKINDCD  ) SURVPROSTATUSCD 
+                            FROM (
+                                  SELECT CASE WHEN B.SURVSEQ > C.SURVSEQ THEN B.SURVSEQ ELSE C.SURVSEQ END AS SURVSEQ
+                                       , NVL(B.SURVKINDCD, C.SURVKINDCD) AS SURVKINDCD
+                                       , A.SCHCD
+                                       , A.ORGCD
+                                    FROM TMAD_USERSCHOOL A
+                                       , (
+                                          SELECT SCHCD
+                                               , ORGCD
+                                               , SURVKINDCD
+                                               , MAX(SURVSEQ) AS SURVSEQ
+                                            FROM TMAD_SCHOOL
+                                           WHERE SURVSTRTDT <![CDATA[ <= ]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+                                             AND SURVENDDT >= TO_CHAR(SYSDATE, 'YYYYMMDD')
+                                             AND SURVKINDCD = #{SURVKINDCD}
+                                           GROUP BY SCHCD, ORGCD, SURVKINDCD
+                                         ) B
+                                       , (
+                                          SELECT SURVKINDCD, MAX(SURVSEQ) SURVSEQ
+                                            FROM TMAD_SURVEY
+                                           WHERE SURVKINDCD = #{SURVKINDCD}
+                                             AND SURVSTRTDT <![CDATA[ <= ]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+                                           GROUP BY SURVKINDCD
+                                         ) C
+                                   WHERE A.SCHCD = B.SCHCD(+)
+                                     AND A.ORGCD = B.ORGCD(+)
+                                     AND A.USERID = #{USERID}
+                                 ) SH
+		                 ) A
+		       )    
+		 ORDER BY SCHNM, ORGCD 
+
+	</select>
+	
+	<!--  조사학교 처리상태 정보 -->
+	<select id="selectSchoolInfo" parameterType="java.util.Map" resultType="java.util.Map">
+	
+		SELECT SURVSEQ
+		     , SURVKINDCD
+		     , SCHCD
+		     , ORGCD
+		     , SURVPROSTATUSCD
+		     , CHGCOMYN
+		     , SCHNM
+		     , ORGNM
+		     , SURVPROSTATUSNM
+		     , SURVSTRTDT
+		     , SURVENDDT
+		     , TO_DATE
+		     , NUMCANCEL
+		     , NUMEXAMDT
+		     , INFOREGDT
+		     , INFOSENDDT
+		     , INFOINFODT
+		     , INFOAPPRODT
+		  FROM (
+		        SELECT A.SURVSEQ
+		             , A.SURVKINDCD           
+		             , A.SCHCD
+		             , A.ORGCD
+		             , A.SURVPROSTATUSCD
+		             , CASE  A.CHGCOMYN WHEN '1' THEN '1' ELSE '2' END AS CHGCOMYN            
+		             , ( SELECT SCHNM  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD ) SCHNM 
+		             , SP_CODENAME_FU(A.SURVSEQ, A.SURVKINDCD,'1001', A.ORGCD) AS ORGNM
+		             , SP_CODENAME_FU(A.SURVSEQ, A.SURVKINDCD,#{STATUSparamCD}, A.SURVPROSTATUSCD) AS SURVPROSTATUSNM
+		             , ( SELECT SURVSTRTDT  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD ) SURVSTRTDT
+		             , ( SELECT SURVENDDT  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD ) SURVENDDT
+		             , TO_CHAR(SYSDATE,'YYYYMMDD') AS TO_DATE
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '5'   
+		               ) NUMCANCEL 
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '4'   
+		               ) NUMEXAMDT
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI') FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '7' 
+		               ) INFOREGDT
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '11' 
+		               ) INFOSENDDT    
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '9' 
+		               ) INFOINFODT    
+		             , ( SELECT TO_CHAR(MAX( STATUSWKDTHM ), 'YYYY.MM.DD HH24:MI')  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND  
+		                           SURVSEQ = A.SURVSEQ AND  SURVKINDCD = A.SURVKINDCD AND ORGCD = A.ORGCD AND STATUSCD = '12' 
+		               ) INFOAPPRODT
+		            FROM (           
+		                  SELECT SH.SURVSEQ
+                               , SH.SURVKINDCD
+                               , SH.SCHCD
+                               , SH.ORGCD
+                               , ( SELECT CHGCOMYN  FROM TMAD_USERSCHOOL WHERE SCHCD = SH.SCHCD  AND ORGCD = SH.ORGCD AND USERGRPTYPE ='4' )  CHGCOMYN 
+                               , SH.SURVPROSTATUSCD 
+                            FROM TMAD_SCHOOL SH
+                           WHERE 1=1
+                             AND SH.SURVSEQ = #{SURVSEQ}
+                             AND SH.SURVKINDCD = #{SURVKINDCD}
+                             AND SH.SCHCD = #{SCHCD}
+                             AND SH.ORGCD = #{ORGCD}
+		                 ) A
+		       )    
+		 ORDER BY SCHNM, ORGCD 
+
+	</select>
+	
+	<!-- 진행상태 모니터링 -->
+	<select id="selectFpProssStat" parameterType="java.util.Map" resultType="java.util.Map">
+
+  			SELECT 
+  				ROWNUM
+  				,A.SURVSEQ
+  				, A.SURVKINDCD
+  				, A.SCHCD
+  				, A.ORGCD
+  				, A.MNTRSEQ
+  				, A.STATUSCD
+  				, A.STATUSWKDTHM
+  				, SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},#{STATUSparamCD}, A.STATUSCD) AS STATUSNM 
+  				, ( SELECT SP_DEC_FU( USERNM ) USERNM FROM TMAD_USER WHERE USERID = A.WORKERID ) USERNM 	
+  				, A.RCEPTCN			
+			  FROM TMAD_SURVMNTR A
+			 WHERE 
+			 	SCHCD =  #{SCHCD}
+			 	AND ORGCD = #{ORGCD}
+				AND SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				
+				ORDER BY   A.MNTRSEQ DESC
+
+	</select>	
+	
+	<!--  학교목록 별 전산담당자 -->
+	<select id="selectChargeCompuList" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT B.SURVSEQ
+	  		 , B.SURVKINDCD			
+			 , B.SCHCD
+			 , B.ORGCD
+			 , ( SELECT SURVPROSTATUSCD  FROM TMAD_SCHOOL WHERE SCHCD = B.SCHCD AND  SURVSEQ = #{SURVSEQ} AND  SURVKINDCD = #{SURVKINDCD} AND ORGCD = B.ORGCD ) SURVPROSTATUSCD 
+			 , B.CHGCOMYN
+			 , B.SCHNM 
+			 , B.ORGNM
+			 , ( SELECT SURVSTRTDT  FROM TMAD_SCHOOL WHERE SCHCD = B.SCHCD AND  SURVSEQ = #{SURVSEQ} AND  SURVKINDCD = #{SURVKINDCD} AND ORGCD = B.ORGCD ) SURVSTRTDT
+			 , ( SELECT SURVENDDT  FROM TMAD_SCHOOL WHERE SCHCD = B.SCHCD AND  SURVSEQ = #{SURVSEQ} AND  SURVKINDCD = #{SURVKINDCD} AND ORGCD = B.ORGCD ) SURVENDDT
+			 , TO_CHAR(SYSDATE,'YYYYMMDD') AS TO_DATE			
+			 , B.USERID_COM	
+			 , ( SELECT  USERID FROM TMAD_USER WHERE   USERID = B.USERID_COM  AND WORKYN = '1')  USERID
+			 , ( SELECT  USERGRPTYPE FROM TMAD_USER WHERE      USERID = B.USERID_COM   AND WORKYN = '1')  USERGRPTYPE
+			 , ( SELECT  SP_DEC_FU( USERNM  ) USERNM FROM TMAD_USER WHERE      USERID = B.USERID_COM   AND WORKYN = '1')  USERNM
+			 , ( SELECT  TELNO FROM TMAD_USER WHERE      USERID = B.USERID_COM   AND WORKYN = '1')  TELNO
+			 , ( SELECT  SP_DEC_FU( MOBILENO ) MOBILENO FROM TMAD_USER WHERE      USERID = B.USERID_COM   AND WORKYN = '1')  MOBILENO		
+			 , ( SELECT  SP_DEC_FU( EMAILADDR ) MOBILENO FROM TMAD_USER WHERE      USERID = B.USERID_COM   AND WORKYN = '1')  EMAILADDR					
+		  FROM (
+				SELECT A.SURVSEQ
+		  		     , A.SURVKINDCD			
+				     , A.SCHCD
+				     , A.ORGCD
+		             , CASE A.CHGCOMYN  WHEN '1' THEN '1' ELSE '2' END AS CHGCOMYN
+				     , ( SELECT SCHNM  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = #{SURVSEQ} AND  SURVKINDCD = #{SURVKINDCD} AND ORGCD = A.ORGCD ) SCHNM 
+				     , SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1001', A.ORGCD) AS ORGNM
+				     , ( SELECT  USERID FROM TMAD_USERSCHOOL WHERE   SCHCD = A.SCHCD AND ORGCD = A.ORGCD   AND USERID <![CDATA[ <> ]]> #{USERID} )  USERID_COM
+		  		  FROM (			
+		  			    SELECT #{SURVSEQ} SURVSEQ
+		  				     , #{SURVKINDCD} SURVKINDCD
+		  				     , SH.SCHCD
+		  				     , SH.ORGCD
+		  				     , SH.CHGCOMYN
+					      FROM TMAD_USERSCHOOL  SH 
+					     WHERE SH.USERID =  #{USERID}
+				       ) A
+			   ) B
+		 ORDER BY B.SCHNM, B.ORGCD
+	</select>	
+	
+	<!-- 학교전산담당자 정보 -->
+	<select id="selectChargeCompuInfo" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT A.SURVSEQ
+             , A.SURVKINDCD
+             , A.SCHCD
+             , A.ORGCD
+             , A.SURVPROSTATUSCD
+             , DECODE((SELECT CHGCOMYN FROM TMAD_USERSCHOOL WHERE SCHCD = A.SCHCD AND ORGCD = A.ORGCD AND USERGRPTYPE = '4'),'1','1','2') CHGCOMYN
+             , A.SCHNM
+             , SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD}, '1001', A.ORGCD) ORGNM
+             , B.USERID
+             , B.USERGRPTYPE
+             , B.USERNM
+             , B.TELNO
+             , B.MOBILENO
+             , B.EMAILADDR
+          FROM TMAD_SCHOOL A
+             , (
+                SELECT X.SCHCD
+                     , X.ORGCD
+                     , X.USERID
+                     , X.USERGRPTYPE
+                     , SP_DEC_FU(Y.USERNM) USERNM
+                     , Y.TELNO
+                     , SP_DEC_FU(Y.MOBILENO) MOBILENO
+                     , SP_DEC_FU(Y.EMAILADDR) EMAILADDR
+                  FROM TMAD_USERSCHOOL X
+                     , TMAD_USER Y
+                 WHERE 1=1
+                   AND X.USERID = Y.USERID
+                   AND X.SCHCD = #{SCHCD}
+                   AND X.ORGCD = #{ORGCD}
+                   AND X.USERGRPTYPE = '5'
+                   AND Y.WORKYN = '1'
+               ) B
+         WHERE A.SCHCD = B.SCHCD(+)
+           AND A.ORGCD = B.ORGCD(+)
+           AND A.SURVSEQ = #{SURVSEQ}
+           AND A.SURVKINDCD = #{SURVKINDCD}
+           AND A.SCHCD = #{SCHCD}
+           AND A.ORGCD = #{ORGCD}
+	</select>
+	
+	<!-- 전산담당자 등록 -->
+	<insert id="saveChargeCompu" parameterType="java.util.Map">
+
+		MERGE INTO TMAD_USER
+            USING DUAL
+            ON ( USERID = #{USERID} )
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            USERNM = SP_ENC_FU( #{USERNM} )
+                            ,TELNO = #{TELNO}
+                            ,MOBILENO = SP_ENC_FU( #{MOBILENO})
+                            ,WORKYN = '1'
+                            ,MODIFIERID = #{WORKERID}
+                            ,MODDTHM = SYSDATE
+            WHEN NOT MATCHED THEN
+			  INSERT ( 
+					USERID
+					,USERGRPTYPE
+					,USERNM
+					,PASSWD
+					,DEPTNM
+					,TELNO
+					,MOBILENO
+					,FAXNO
+					,EMAILADDR
+					,SMSYN
+					,SCHCD
+					,WORKYN
+					,ORIPASSWDYN
+					,WORKDTHM
+					,WORKERID
+				)
+			VALUES(
+				  #{USERID}
+				, '5'
+				, SP_ENC_FU( #{USERNM} )
+				, SP_PWENC_FU( DBMS_RANDOM.STRING('A',6) )
+				, ''
+				, #{TELNO}
+				, SP_ENC_FU( #{MOBILENO} )
+				, ''
+				, SP_ENC_FU( #{USERID} )
+				, '1'
+				, #{SCHCD}
+				, '1'
+				, '1'
+				, SYSDATE
+				, #{WORKERID}
+			)	
+					
+    </insert>		
+	
+	
+ 	<!-- 전산담당자 유무 저장 -->
+	<update id="saveCheComyn" parameterType="java.util.Map" >
+			UPDATE TMAD_USERSCHOOL  SET CHGCOMYN = #{CHGCOMYN} 
+			WHERE  
+			 	SCHCD =  #{SCHCD}
+			 	AND ORGCD = #{ORGCD}
+		
+	</update>		
+	
+ 	<!-- 전산담당자 삭제 -->
+	<update id="deleteChargeCompu" parameterType="java.util.Map" >
+			UPDATE TMAD_USER  SET WORKYN = '2' , EPKIKEY = ''    WHERE USERID = #{USERID} 
+	</update>		
+			
+ 	<!-- 전산담당자 학교 삭제 -->
+	<delete id="deleteChargeSchool" parameterType="java.util.Map" >
+			DELETE FROM TMAD_USERSCHOOL   
+			WHERE USERID = #{USERID}
+			AND  SCHCD = #{SCHCD}
+			AND  ORGCD = #{ORGCD}
+	</delete>			
+			
+	<!-- 전산담당자 학교 개수 확인  -->
+	<select id="checkChargeCnt" parameterType="java.util.Map" resultType="int">
+			SELECT count(USERID)
+			  FROM TMAD_USERSCHOOL
+			 WHERE 
+			  USERID = #{USERID}
+	</select>		
+	
+	
+	
+	<!-- 학교 정보  검색용 가져오기 -->
+	<select id="getChargeSchoolList" parameterType="java.util.Map" resultType="java.util.Map">
+        SELECT A.SCHCD 
+             , A.ORGCD
+             , A.SCHNM
+             , A.ORGNM
+             , A.UNIGRADECD
+             , A.SURVPROSTATUSCD
+             , CASE A.CHGCOMYN WHEN '1' THEN '1' ELSE '2' END as CHGCOMYN                   
+             , CASE WHEN A.SURVPROSTATUSCD  IS NULL  THEN '미제출'
+                    ELSE SP_CODENAME_FU(A.SURVSEQ, A.SURVKINDCD,#{STATUSparamCD}, A.SURVPROSTATUSCD)  
+               END STATUSNM
+             , SCHKINDCD
+          FROM (
+                SELECT SH.SURVSEQ
+                     , SH.SURVKINDCD
+                     , SH.SCHCD 
+                     , SH.ORGCD
+                     , ( SELECT CHGCOMYN  FROM TMAD_USERSCHOOL WHERE SCHCD = SH.SCHCD  AND ORGCD = SH.ORGCD AND USERGRPTYPE ='4' )  CHGCOMYN 
+                     , SH.SCHNM
+                     , SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD}, '1001', SH.ORGCD) ORGNM
+                     , SH.UNIGRADECD
+                     , SH.SURVPROSTATUSCD
+                     , SH.SCHKINDCD 
+                  FROM TMAD_SCHOOL SH
+                 WHERE 1=1
+                     AND SH.SURVSEQ = #{SURVSEQ}
+                     AND SH.SURVKINDCD = #{SURVKINDCD}
+                     AND SH.SCHCD = #{SCHCD}
+                     AND SH.ORGCD = #{ORGCD}
+               ) A
+	</select>		
+	
+	
+	<!-- 학과 정보 가져오기.... -->
+	<select id="selectDeptCd" parameterType="java.util.Map" resultType="java.util.Map">
+
+  			SELECT 
+  				DEPTCD
+			 FROM TMCM_DEPT 
+			 WHERE 
+			 	AND ORGCD = #{ORGCD}
+				AND SURVSEQ = #{SURVSEQ}
+				<if test="sel_match != 'Y'">
+				AND UPPER(DEPTNM) LIKE UPPER('%' || #{sel_dept} || '%')
+				</if>
+				<if test="sel_match == 'Y'">
+				AND DEPTNM =   #{sel_dept}
+				</if>				
+	
+	</select>		
+	
+
+	
+	
+	<!-- 신편입 일반대학 학과대상 목록 가져옴.... -->
+	<select id="selectFpDeptList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT ROWNUM
+			    , SURVSEQ
+			    , SURVKINDCD
+			    , ENTERSEQ
+			    , SCHCD
+			    , ORGCD
+			    , COLCD
+			    , COLCDNM
+			    , DEPTCD
+			    , DEPTNM
+			    , DEPTDNCD
+			    , DEPTDNNM
+			    , MOECLASS
+			    , FRESHCNT
+			    , FRESHCNTF
+			    , FRESHCNTM
+			    , COLFRESHCNT
+			    , COLFRESHCNTF
+			    , COLFRESHCNTM
+			    , UNIFRESHCNT
+			    , UNIFRESHCNTF
+			    , UNIFRESHCNTM
+			    , UMFRESHCNT
+			    , UMFRESHCNTF
+			    , UMFRESHCNTM
+			    , MSTFRESHCNT
+			    , MSTFRESHCNTF
+			    , MSTFRESHCNTM
+			    , DRFRESHCNT
+			    , DRFRESHCNTF
+			    , DRFRESHCNTM
+			    , MDFRESHCNT
+			    , MDFRESHCNTF
+			    , MDFRESHCNTM
+			    , DECODE(STATUSCD,'4',STATUSWKDTHM,'6',STATUSWKDTHM,'7',STATUSWKDTHM,'8',STATUSWKDTHM,'9',STATUSWKDTHM,'11',STATUSWKDTHM,'12',STATUSWKDTHM,'') AS STATUSWKDTHM
+			  FROM (
+			    SELECT 
+			        A.SURVSEQ 
+			        ,A.SURVKINDCD
+			        ,A.ENTERSEQ
+			        ,A.SCHCD
+			        ,A.ORGCD
+			        ,A.COLCD
+			        ,B.COLNM COLCDNM
+			        ,A.DEPTCD
+			        ,(SELECT DEPTNM FROM TMCM_DEPT WHERE  SURVSEQ = #{SURVSEQ} AND SURVKINDCD = #{SURVKINDCD}  AND DEPTCD = A.DEPTCD ) DEPTNM
+			        ,A.DEPTDNCD
+			        , SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', A.DEPTDNCD) AS DEPTDNNM
+			        ,A.MOECLASS
+			        ,A.FRESHCNT
+			        ,A.FRESHCNTF
+			        ,A.FRESHCNTM
+			        ,A.COLFRESHCNT
+			        ,A.COLFRESHCNTF
+			        ,A.COLFRESHCNTM
+			        ,A.UNIFRESHCNT
+			        ,A.UNIFRESHCNTF
+			        ,A.UNIFRESHCNTM
+			        ,A.UMFRESHCNT
+			        ,A.UMFRESHCNTF
+			        ,A.UMFRESHCNTM
+			        ,A.MSTFRESHCNT
+			        ,A.MSTFRESHCNTF
+			        ,A.MSTFRESHCNTM
+			        ,A.DRFRESHCNT
+			        ,A.DRFRESHCNTF
+			        ,A.DRFRESHCNTM
+			        ,A.MDFRESHCNT
+			        ,A.MDFRESHCNTF
+			        ,A.MDFRESHCNTM
+			        , ( SELECT SURVPROSTATUSCD  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND ORGCD = A.ORGCD AND SURVSEQ = A.SURVSEQ AND SURVKINDCD = A.SURVKINDCD ) AS STATUSCD  
+			        , ( SELECT MAX(STATUSWKDTHM)  FROM TMAD_SURVMNTR WHERE  SCHCD =  #{SCHCD} AND ORGCD = #{ORGCD} AND SURVSEQ = #{SURVSEQ} AND SURVKINDCD = #{SURVKINDCD}  AND STATUSCD = 4 ) STATUSWKDTHM
+			      FROM TMFP_FRSPSNCNT A, TMCM_COL B
+			     WHERE 
+			        A.SCHCD =  #{SCHCD}
+			        AND A.ORGCD = #{ORGCD}
+			        AND A.SURVSEQ = #{SURVSEQ}
+			        AND A.SURVKINDCD = #{SURVKINDCD}
+			        AND A.SURVSEQ = B.SURVSEQ 
+			        AND A.SURVKINDCD = B.SURVKINDCD 
+			        AND A.COLCD = B.COLCD 
+			        <if test='sel_dept != null and sel_dept != ""'>
+			            AND DEPTCD IN (  SELECT  DEPTCD FROM TMCM_DEPT  WHERE   SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND UPPER(DEPTNM) LIKE UPPER('%' || #{sel_dept} || '%') )
+			        </if>               
+			        <if test='sel_dayNight != null and sel_dayNight != ""'>
+			            AND DEPTDNCD =   #{sel_dayNight}
+			        </if>
+			     ORDER BY A.ENTERSEQ, A.DEPTCD
+			  )
+	</select>		
+	
+	
+	
+	<!-- 주야간 목록 -->
+	<select id="getDayNight" parameterType="java.util.Map" resultType="java.util.Map">
+
+			SELECT B.DNCD, B.DNNM  FROM 
+			(			
+	  			SELECT 
+	  				A.CD  DNCD
+	  				,A.CDNM	 DNNM	
+	  				, 1 ORDBY ,ROWNUM RN
+				  FROM TCCM_CODE A
+				 WHERE 
+				 	CDTYPE =  '1004'
+					AND SURVSEQ = #{SURVSEQ}
+					AND SURVKINDCD = #{SURVKINDCD}
+			) B ORDER BY B.ORDBY , B.RN					
+
+	</select>
+	<select id="setDayNight" parameterType="java.util.Map" resultType="java.util.Map">
+	
+	  			SELECT 
+	  				A.DEPTDNCD
+	  				, SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', A.DEPTDNCD) AS DEPTDNNM
+				  FROM TMFP_FRSPSNCNT A
+				 WHERE 
+					SURVSEQ = #{SURVSEQ}
+					AND SURVKINDCD = #{SURVKINDCD}
+					AND SCHCD = #{SCHCD}
+					AND ORGCD = #{ORGCD}				  
+				  GROUP BY DEPTDNCD
+
+	</select>
+	
+	
+	<select id="getAreaSchCd" parameterType="java.util.Map" resultType="java.util.Map">
+
+			SELECT B.AREACD, B.AREANM  FROM 
+			(			
+	  			SELECT 
+	  				A.CD  AREACD
+	  				,A.CDNM	 AREANM	
+	  				, 1 ORDBY ,ROWNUM RN
+				  FROM TCCM_CODE A
+				 WHERE 
+				 	CDTYPE =  '2008'
+					AND SURVSEQ = #{SURVSEQ}
+					AND SURVKINDCD = #{SURVKINDCD}
+			) B ORDER BY B.ORDBY , B.RN					
+
+	</select>	
+	
+		
+	<!--연계인원수  -->
+	<select id="getTargetCnt" parameterType="java.util.Map" resultType="int">
+			SELECT sum(FRESHCNT)    FROM TMFP_FRSPSNCNT 
+		 	WHERE 
+					SURVSEQ = #{SURVSEQ}
+					AND SURVKINDCD = #{SURVKINDCD}
+					AND SCHCD = #{SCHCD}
+					AND ORGCD = #{ORGCD}	 	
+	</select>		
+	
+	
+	
+	<!-- 조사상태 히스토리 등록 -->
+	<insert id="insertSurvHist" parameterType="java.util.Map">
+		<selectKey resultType="int" keyProperty="MNTRSEQ" order="BEFORE">
+	        SELECT NVL(MAX(MNTRSEQ),0)+1 FROM TMAD_SURVMNTR  WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD =  #{SURVKINDCD} AND SCHCD = #{SCHCD} AND ORGCD =  #{ORGCD}       
+	    </selectKey> 	
+		INSERT INTO TMAD_SURVMNTR (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHCD
+			,ORGCD
+			,MNTRSEQ
+			,STATUSCD
+			,STATUSWKDTHM
+			,RCEPTCN
+			,ATT_IDT_NO
+			,ATT_SEQ
+			,WORKERID
+			,WORKDTHM
+			) VALUES
+	        (#{SURVSEQ}
+			,#{SURVKINDCD}
+			,#{SCHCD}
+			,#{ORGCD}
+			,#{MNTRSEQ}
+			,#{STATUSCD}
+			,SYSDATE
+			,#{RCEPTCN}
+			,#{ATT_IDT_NO}
+			,0			
+			,#{USERID}
+			,SYSDATE	
+			)
+	</insert>	
+	
+	
+ 	<!-- 학교조사상태 없데이트 -->
+	<update id="updateSurvHist" parameterType="java.util.Map" >
+		
+			UPDATE TMAD_SCHOOL 
+				SET SURVPROSTATUSCD   = #{STATUSCD}
+				  , SURVPROSTATUSDTHM = SYSDATE   
+			WHERE SCHCD = #{SCHCD} 
+				AND  SURVSEQ = #{SURVSEQ} 
+				AND  SURVKINDCD = #{SURVKINDCD} 
+				AND ORGCD = #{ORGCD}
+	</update>	
+	
+	
+	<!--전산담당자 유무 체크  -->
+	<select id="getComUserYn" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(SCHCD)  FROM TMAD_USERSCHOOL 
+		 	WHERE 
+	 			SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+	 			AND USERGRPTYPE = '5'
+
+	</select>	
+	
+	
+	<delete id="deleteFgRegist" parameterType="java.util.Map">
+	    DELETE FROM TRFP_FRSPSNINFO  
+				WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+	</delete>	
+	<insert id="insertBatchFgRegist" parameterType="java.util.Map">
+		<if test="list.size != 0">
+		    <foreach collection="list" item="item" separator="  , " >
+				INSERT INTO  TRFP_FRSPSNINFO (
+					SURVSEQ
+					,SURVKINDCD
+					,SCHCD
+					,ORGCD
+					
+					,STUDENTSEQ
+					,COLCD
+					,DEPTCD
+					,STUDENTNO
+					,NAME
+					
+					,JUMINNO
+					,UNIQUEKEY
+					,BIRTHYEAR
+					,SEXCD
+					,DNCD
+					
+					,EXCHANGEYN
+					,ENTRANCETYPE
+					,ENTRANCEDATE
+					,ENTRANCEYEAR
+					,DEGREECD
+					
+					,REGISTERTYPE
+					,REGISTERDATE	
+						
+					,WORKERID
+					,WORKDTHM
+				) VALUES		    
+			        (#{item.SURVSEQ}
+					,#{item.SURVKINDCD}
+					,#{item.SCHCD}
+					,#{item.ORGCD}
+					
+					,#{item.STUDENTSEQ}
+					,#{item.COLCD}
+					,#{item.DEPTCD}
+					,#{item.STUDENTNO}
+					,#{item.NAME}
+					
+					,#{item.JUMINNO}
+					,#{item.UNIQUEKEY}
+					,#{item.BIRTHYEAR}
+					,#{item.SEXCD}
+					,#{item.DNCD}
+					
+					,#{item.EXCHANGEYN}
+					,#{item.ENTRANCETYPE}
+					,#{item.ENTRANCEDATE}
+					,#{item.ENTRANCEYEAR}
+					,#{item.DEGREECD}
+					
+					,#{item.REGISTERTYPE}	
+					,#{item.REGISTERDATE}		
+					,#{item.WORKERID}
+					,SYSDATE)
+		    </foreach>  
+	    </if>
+	</insert>		
+	
+	<!-- 정보 개별등록 -->
+	<insert id="insertBatchFgRegistOne" parameterType="java.util.Map" flushCache="true">
+		<selectKey resultType="int" keyProperty="STUDENTSEQ2" order="BEFORE">
+	        SELECT NVL(MAX(STUDENTSEQ),0)+1 FROM TRFP_FRSPSNINFO  WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD =  #{SURVKINDCD} AND SCHCD = #{SCHCD} AND ORGCD =  #{ORGCD}       
+	    </selectKey>
+				INSERT INTO  TRFP_FRSPSNINFO (
+					SURVSEQ
+					,SURVKINDCD
+					,SCHCD
+					,ORGCD
+					
+					,STUDENTSEQ
+					,COLCD
+					,DEPTCD
+					,STUDENTNO
+					,NAME
+					
+					,JUMINNO
+					,UNIQUEKEY
+					,BIRTHYEAR
+					,SEXCD
+					,DNCD
+					
+					,EXCHANGEYN
+					,ENTRANCETYPE
+					,ENTRANCEDATE
+					,ENTRANCEYEAR
+					,DEGREECD
+					
+					,REGISTERTYPE
+					,REGISTERDATE	
+						
+					,WORKERID
+					,WORKDTHM
+					,COUNT
+					
+					,COLNM
+					,DEPTNM
+					,AGE
+					
+					
+				) VALUES (	    
+			        #{SURVSEQ}
+					,#{SURVKINDCD}
+					,#{SCHCD}
+					,#{ORGCD}
+					
+					,#{STUDENTSEQ2}
+					,#{COLCD}
+					,#{DEPTCD}
+					,#{STUDENTNO}
+					,SP_ENC_FU( #{NAME} )
+					
+					,SP_ENC_FU( #{JUMINNO} )
+					,#{UNIQUEKEY}
+					,SP_ENC_FU(#{BIRTHYEAR} )
+					,#{SEXCD}
+					,#{DNCD}
+					
+					,#{EXCHANGEYN}
+					,#{ENTRANCETYPE}
+					,#{ENTRANCEDATE}
+					,#{ENTRANCEYEAR}
+					,#{DEGREECD}
+					
+					,#{REGISTERTYPE}	
+					,#{REGISTERDATE}		
+					,#{WORKERID}
+					,SYSDATE
+					,0
+					
+					,#{COLNM}
+					,#{DEPTNM}
+					,#{AGE}				
+				)
+  
+	</insert>	
+	
+	<!-- 단과대학명... -->
+	<select id="getCOLNM" parameterType="java.util.Map" resultType="java.util.Map">
+  			SELECT  SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0504', #{COLCD} ) AS COLNM FROM DUAL
+	</select>		
+	<!-- 학과명... -->
+	<select id="getDEPTNM" parameterType="java.util.Map" resultType="java.util.Map">
+  			SELECT  DEPTNM FROM TMCM_DEPT  WHERE   SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND DEPTCD =  #{DEPTCD}
+	</select>	
+		
+
+	<select id="listSaveErrorSummary" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			(SELECT COUNT(*) ERRCNT FROM TMAD_SAVEERROR
+			WHERE
+			 	SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+			) AS ERRALLCNT,
+			(SELECT COUNT(*) ERRCNT FROM TMAD_SAVEERROR
+			WHERE
+			 	SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND ERRKIND ='1'
+			) AS ERRCHKCNT,
+			(SELECT COUNT(*) ERRCNT FROM TMAD_SAVEERROR				
+			WHERE
+			 	SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND ERRKIND ='2'
+			) AS ERRCNT,					
+			(SELECT COUNT(*) REGCNT FROM TRFP_FRSPSNINFO 
+			WHERE
+			 	SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+			) AS REGCNT
+		FROM DUAL							
+	</select>	
+	
+	<select id="listSaveErrorSummaryGP" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			(SELECT COUNT(*) ERRCNT FROM TMAD_SAVEERROR
+			WHERE
+			 	SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+			) AS ERRALLCNT,
+			(SELECT COUNT(*) ERRCNT FROM TMAD_SAVEERROR
+			WHERE
+			 	SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND ERRKIND ='1'
+			) AS ERRCHKCNT,
+			(SELECT COUNT(*) ERRCNT FROM TMAD_SAVEERROR				
+			WHERE
+			 	SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND ERRKIND ='2'
+			) AS ERRCNT,					
+			(SELECT COUNT(*) REGCNT FROM TRGP_GRDPSNINFO 
+			WHERE
+			 	SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+			) AS REGCNT
+		FROM DUAL							
+	</select>	
+	
+	<select id="listSaveError" parameterType="java.util.Map" resultType="java.util.Map">
+	
+		SELECT 
+			ROWNUM AS RN ,A.STUDENTNO ,A.SURVSEQ ,A.STUDENTSEQ ,A.SCHNM ,A.WORKDTHM ,A.SCHCD ,A.ERRDESC 
+			,A.UNIQUEKEY ,A.ERRKINDNM ,A.ERRCD  ,A.COLCD  ,A.WORKERID ,A.ORGCD 
+			,A.ERRKIND ,A.ORGNM ,A.DEPTNM ,A.DEPTCD ,A.SURVKINDCD ,A.SEQ
+			FROM
+				(
+					SELECT 			
+						T1.SURVSEQ
+						,T1.SURVKINDCD
+						,T1.SCHCD
+						,T2.SCHNM
+						,T1.ORGCD
+						,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) AS ORGNM
+						,T1.SEQ
+						,T1.STUDENTSEQ
+						,T1.STUDENTNO
+						,T1.UNIQUEKEY
+						,T1.ERRKIND
+						,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'6011', T1.ERRKIND) AS ERRKINDNM
+						,T1.ERRCD
+						,T1.COLCD
+						,T1.DEPTCD
+						,T3.DEPTNM
+						,T1.ERRDESC
+						,T1.WORKERID
+						,T1.WORKDTHM
+					  FROM TMAD_SAVEERROR T1, TMAD_SCHOOL T2, TMCM_DEPT T3
+					 WHERE 	T1.SURVSEQ = T2.SURVSEQ
+						AND T1.SURVKINDCD = T2.SURVKINDCD
+						AND T1.SCHCD = T2.SCHCD
+						AND T1.ORGCD = T2.ORGCD	
+						AND T1.SURVSEQ = T3.SURVSEQ(+)
+						AND T1.SURVKINDCD = T3.SURVKINDCD(+)
+						AND T1.DEPTCD = T3.DEPTCD(+)				
+					 	AND T1.SURVSEQ = #{SURVSEQ}
+						AND T1.SURVKINDCD = #{SURVKINDCD}
+						AND T1.SCHCD = #{SCHCD}
+						AND T1.ORGCD = #{ORGCD}
+					<if test='STUDENTNO != null and STUDENTNO != ""'>
+						AND  UPPER(STUDENTNO) LIKE UPPER('%' || #{STUDENTNO} || '%') 
+					</if>
+					<if test='DEPTNM != null and DEPTNM != ""'>
+						AND  UPPER(DEPTNM) LIKE UPPER('%' || #{DEPTNM} || '%') 
+					</if>		
+					<if test="UNIQUEKEY != null">
+						AND UNIQUEKEY = #{UNIQUEKEY}
+					</if>
+					ORDER BY SEQ
+				) A
+	</select>	
+	<select id="listSaveErrorTOTALPAGECNT" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT COUNT(*) TOTALPAGECNT
+		FROM(
+			SELECT 			
+				T1.SURVSEQ
+				,T1.SURVKINDCD
+				,T1.SCHCD
+				,T2.SCHNM
+				,T1.ORGCD
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) AS ORGNM
+				,T1.SEQ
+				,T1.STUDENTSEQ
+				,T1.STUDENTNO
+				,T1.UNIQUEKEY
+				,T1.ERRKIND
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'6011', T1.ERRKIND) AS ERRKINDNM
+				,T1.ERRCD
+				,T1.COLCD
+				,T1.DEPTCD
+				,T3.DEPTNM
+				,T1.ERRDESC
+				,T1.WORKERID
+				,T1.WORKDTHM
+			  FROM TMAD_SAVEERROR T1, TMAD_SCHOOL T2, TMCM_DEPT T3
+			 WHERE 	T1.SURVSEQ = T2.SURVSEQ
+				AND T1.SURVKINDCD = T2.SURVKINDCD
+				AND T1.SCHCD = T2.SCHCD
+				AND T1.ORGCD = T2.ORGCD	
+				AND T1.SURVSEQ = T3.SURVSEQ(+)
+				AND T1.SURVKINDCD = T3.SURVKINDCD(+)
+				AND T1.DEPTCD = T3.DEPTCD(+)				
+			 	AND T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+			<if test='STUDENTNO != null and STUDENTNO != ""'>
+				AND  UPPER(STUDENTNO) LIKE UPPER('%' || #{STUDENTNO} || '%') 
+			</if>
+			<if test='DEPTNM != null and DEPTNM != ""'>
+				AND  UPPER(DEPTNM) LIKE UPPER('%' || #{DEPTNM} || '%') 
+			</if>		
+			<if test="UNIQUEKEY != null">
+				AND UNIQUEKEY = #{UNIQUEKEY}
+			</if>
+		)
+	</select>		
+	
+	<!-- 트랜젝션 목록 -->
+	<select id="selectFpTr" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+				STUDENTNO , SCHCD
+				,ORGCD, SP_DEC_FU( JUMINNO)JUMINNO
+				,COLCD,DEPTCD  
+				,DNCD
+				,ENTRANCEYEAR
+				FROM TRFP_FRSPSNINFO 
+	 		WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 
+	 			ORDER BY STUDENTSEQ				
+	</select>
+	
+	
+	<!-- 주민번호 중복 체크 , 주민번호 중복 이면서 입학학기가 동일한경우 , 학생번호 중복 체크 ,학교 + 본분교 + 학기 + 단과대학 + 학과  + 주야구분 유효성 -->
+	<insert id="saveFPError" statementType="CALLABLE" parameterType="java.util.Map"> 
+	{ CALL SP_SAVEERROR_FP_PR(
+	#{SURVSEQ},
+	#{SURVKINDCD},
+	#{SCHCD},
+	#{ORGCD},
+	#{WORKERID}) } 
+	</insert>	
+		
+	
+	<!-- 주민번호 중복확인  -->
+	<select id="getJuminCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(JUMINNO)  FROM TRFP_FRSPSNINFO 
+		 	WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+		 		AND JUMINNO = SP_ENC_FU(  #{JUMINNO} )
+	</select>	
+	
+	<!-- 주민번호 중복 이면서 입학학기가 동일한경우  -->
+	<select id="getJuminEnYearCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(JUMINNO)  FROM TRFP_FRSPSNINFO 
+		 	WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD} 
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+		 		AND JUMINNO = SP_ENC_FU( #{JUMINNO} )
+		 		AND ENTRANCEYEAR = #{ENTRANCEYEAR}
+	</select>		
+	
+	<!-- 학생번호 중복확인  -->
+	<select id="getStudentNoCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(STUDENTNO)  FROM TRFP_FRSPSNINFO 
+		 	WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+		 		AND STUDENTNO = #{STUDENTNO}
+	</select>
+		
+	<!-- 학교 + 본분교 + 학기 + 단과대학 + 학과  + 주야구분 유효성  -->
+	<select id="getCodeRowCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(SCHCD)  FROM TMFP_FRSPSNCNT 
+		 	WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+		 		AND ENTERSEQ = #{ENTRANCEYEAR}
+		 		AND COLCD = #{COLCD}
+		 		AND DEPTCD = #{DEPTCD}
+		 		AND DEPTDNCD = #{DNCD}
+	</select>	
+	
+	
+	<!-- 전체 대상자 수  -->
+	<select id="getStudentAllCnt" parameterType="java.util.Map" resultType="int">
+			SELECT SUM(FRESHCNT) FROM TMFP_FRSPSNCNT 
+		 	WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+	</select>
+	<!--  학과별 학생수 겁증  -->
+	<select id="getChkInCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(SCHCD) FROM TRFP_FRSPSNINFO  
+		 	WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 
+	 			
+	 			AND ENTRANCEYEAR = #{ENTERSEQ} 
+	 			AND COLCD = #{COLCD_00} 
+	 			AND DEPTCD = #{DEPTCD_00} 
+	 			AND DNCD = #{DEPTDNCD_00} 
+				<if test=' selKind != null and selKind.equals( "1" )' >
+					AND (  DEGREECD = '1' OR DEGREECD = '2' OR DEGREECD = '3'   )
+					AND SEXCD = '1' 
+				</if>
+				<if test=' selKind != null and selKind.equals( "2" )' >
+					AND (  DEGREECD = '1' OR DEGREECD = '2' OR DEGREECD = '3'   )
+					AND SEXCD = '2' 
+				</if>	 			
+				<if test=' selKind != null and selKind.equals( "3" )' >
+					AND  ( DEGREECD = '3' OR DEGREECD = '4'   OR DEGREECD = '6'  )
+					AND SEXCD = '1' 
+				</if>
+				<if test=' selKind != null and selKind.equals( "4" )' >
+					AND  ( DEGREECD = '3' OR DEGREECD = '4'   OR DEGREECD = '6'  ) 
+					AND SEXCD = '2' 
+				</if>
+				<if test=' selKind != null and selKind.equals( "5" )' >
+					AND  DEGREECD = '5'   
+					AND SEXCD = '1' 
+				</if>
+				<if test=' selKind != null and selKind.equals( "6" )' >
+					AND  DEGREECD = '5'   
+					AND SEXCD = '2' 
+				</if>			 				
+	 				
+	</select>		
+
+	
+	<delete id="deleteError" parameterType="java.util.Map">
+	    DELETE FROM TMAD_SAVEERROR  
+				WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+	</delete>
+	<delete id="deleteStatus" parameterType="java.util.Map">
+	    DELETE FROM TMAD_SURVMNTR  
+				WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND STATUSCD > 4
+	</delete>
+	<!-- 학교상태 업데이트 -->
+    <update id="updateStatSchool" parameterType="java.util.Map">
+			update   TMAD_SCHOOL   set  SURVPROSTATUSCD = '4' 
+			WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+    </update>		
+			
+	<!-- 주미번호 중복 업카운트 -->
+    <update id="updatgeJuminCnt" parameterType="java.util.Map">
+			UPDATE TRFP_FRSPSNINFO SET COUNT = COUNT + 1 
+			WHERE JUMINNO = SP_ENC_FU( #{JUMINNO} )
+    </update>			
+	<!-- 주민번호 중복 오류  -->
+	<insert id="insertFPError" parameterType="java.util.Map">
+		    <selectKey resultType="int" keyProperty="SEQ" order="BEFORE">
+		        SELECT NVL(MAX(SEQ),0)+1 SEQ FROM TMAD_SAVEERROR  
+				WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD}		               
+		    </selectKey> 		
+
+			INSERT INTO TMAD_SAVEERROR (
+					SURVSEQ
+					,SURVKINDCD
+					,SCHCD
+					,ORGCD
+					,SEQ
+					,STUDENTSEQ
+					,STUDENTNO
+					,UNIQUEKEY
+					,ERRKIND
+					,ERRCD
+					,COLCD
+					,DEPTCD
+					,ERRDESC
+					,WORKERID
+					,WORKDTHM
+					)
+			VALUES(  #{SURVSEQ} 
+					,#{SURVKINDCD} 
+					,#{SCHCD} 
+					,#{ORGCD} 
+					,#{SEQ}
+					,NULL
+					, #{STUDENTNO}
+					,'-'
+					,#{errGubun}
+					,''
+					,#{COLCD}
+					,#{DEPTCD}
+					,#{errMsg}
+					,#{WORKERID}
+					,SYSDATE
+					)	
+    </insert>	
+	
+	
+	
+	<!-- 오류처리 프로시저 -->
+	<insert id="saveError" statementType="CALLABLE" parameterType="java.util.Map"> 
+		{ CALL SP_SAVEERROR_FP_PR(
+			#{SURVSEQ},
+			#{SURVKINDCD},
+			#{SCHCD},
+			#{ORGCD},
+			#{WORKERID}) } 
+	</insert>	
+	
+	<!-- 등록 완료처리 삭제 -->
+	<delete id="deleteSurvFinish" parameterType="java.util.Map">
+	    DELETE FROM TMFP_FRSPSNINFO   
+				WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+	</delete>	
+	
+	<!-- 등록 완료처리  -->	
+	<insert id="insertSurvFinish" parameterType="java.util.Map" flushCache="true">
+
+				INSERT INTO  TMFP_FRSPSNINFO (
+					SURVSEQ
+					,SURVKINDCD
+					,SCHCD
+					,ORGCD
+					
+					,STUDENTSEQ
+					,COLCD
+					,DEPTCD
+					,STUDENTNO
+					,NAME
+					
+					,JUMINNO
+					,UNIQUEKEY
+					,BIRTHYEAR
+					,SEXCD
+					,DNCD
+					
+					,EXCHANGEYN
+					,ENTRANCETYPE
+					,ENTRANCEDATE
+					,ENTRANCEYEAR
+					,DEGREECD
+					
+					,REGISTERTYPE
+					,REGISTERDATE	
+						
+					,WORKERID
+					,WORKDTHM
+				) 
+				
+				SELECT 
+				
+					SURVSEQ
+					,SURVKINDCD
+					,SCHCD
+					,ORGCD
+					
+					,STUDENTSEQ
+					,COLCD
+					,DEPTCD
+					,STUDENTNO
+					,NAME
+					
+					,JUMINNO
+					,UNIQUEKEY
+					,BIRTHYEAR
+					,SEXCD
+					,DNCD
+					
+					,EXCHANGEYN
+					,ENTRANCETYPE
+					,ENTRANCEDATE
+					,ENTRANCEYEAR
+					,DEGREECD
+					
+					,REGISTERTYPE
+					,REGISTERDATE	
+						
+					,WORKERID
+					,SYSDATE
+					
+				FROM  TRFP_FRSPSNINFO
+ 				WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD} 
+	</insert>		
+	
+	
+	
+ 	<!-- 마스터 삭제 -->
+	<delete id="deleteFpRegResult" parameterType="java.util.Map" >
+			DELETE FROM TMFP_FRSPSNINFO   
+ 				WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+	</delete>			
+				
+	<!-- 제출시 마스터 등록 -->
+	<insert id="insertFPMaster" parameterType="java.util.Map" flushCache="true">
+				INSERT INTO  TMFP_FRSPSNINFO (
+					SURVSEQ
+					,SURVKINDCD
+					,SCHCD
+					,ORGCD
+					
+					,STUDENTSEQ
+					,COLCD
+					,DEPTCD
+					,STUDENTNO
+					,NAME
+					
+					,JUMINNO
+					,UNIQUEKEY
+					,BIRTHYEAR
+					,SEXCD
+					,DNCD
+					
+					,EXCHANGEYN
+					,ENTRANCETYPE
+					,ENTRANCEDATE
+					,ENTRANCEYEAR
+					,DEGREECD
+					
+					,REGISTERTYPE
+					,REGISTERDATE	
+						
+					,WORKERID
+					,WORKDTHM
+					,COUNT
+					
+					,COLNM
+					,DEPTNM
+					,AGE
+					
+					
+				) VALUES (	    
+			        #{SURVSEQ}
+					,#{SURVKINDCD}
+					,#{SCHCD}
+					,#{ORGCD}
+					
+					,#{STUDENTSEQ}
+					,#{COLCD}
+					,#{DEPTCD}
+					,#{STUDENTNO}
+					, #{NAME_NM} 
+					
+					, #{JUMINNO} 
+					,#{UNIQUEKEY}
+					,#{BIRTHYEAR_NM} 
+					,#{SEXCD_CD}
+					,#{DNCD}
+					
+					,#{EXCHANGEYN_YN}
+					,#{ENTRANCETYPE}
+					,#{ENTRANCEDATE}
+					,#{ENTRANCEYEAR}
+					,#{DEGREECD}
+					
+					,#{REGISTERTYPE}	
+					,#{REGISTERDATE}		
+					,#{WORKERID}
+					,SYSDATE
+					,#{COUNT}
+					
+					,#{COLNM}
+					,#{DEPTNM}
+					,#{AGE}				
+				)
+  
+	</insert>		
+	
+	
+	<!--  저산 공유 담당 -->
+	<select id="selectPubCharege02" parameterType="java.util.Map" resultType="java.util.Map">	
+			
+			SELECT 
+				D.SCHCD
+				,( SELECT SCHNM  FROM TMAD_SCHOOL WHERE SCHCD = D.SCHCD AND  SURVSEQ = #{SURVSEQ} AND  SURVKINDCD = #{SURVKINDCD} AND ORGCD = D.ORGCD ) SCHNM
+				,D.ORGCD
+				, SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1001', D.ORGCD) ORGNM
+				,D.USERID
+				,( SELECT SP_DEC_FU( USERNM )  FROM TMAD_USER WHERE USERID = D.USERID ) USERNM
+				
+				FROM(	
+					SELECT 
+						I.SCHCD
+						,I.ORGCD
+						,I.USERID
+					FROM TMAD_USERSCHOOL  I 
+					WHERE  1=1 
+					AND I.USERID IN ( SELECT  USERID FROM TMAD_USER WHERE USERNM = SP_ENC_FU( #{sel_user_nm}) AND WORKYN ='1' AND USERGRPTYPE='5' AND USERID = #{sel_user_id} )
+				
+				) D 
+		
+	</select>		
+	
+</mapper>	
+	

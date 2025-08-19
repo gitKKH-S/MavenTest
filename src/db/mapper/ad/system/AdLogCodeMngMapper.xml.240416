@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdLogCodeMngMapper">
+	
+	
+	<!--  로그인 목록 -->
+	<select id="loginLogList" parameterType="java.util.Map" resultType="java.util.Map">				
+			
+			SELECT 
+				ROWNUM RNUM
+				,R.USERID
+				,R.USERGRPTYPE
+				,R.USERGRPTYPESTR
+				,R.LOGINTYPE
+				,R.LOGINYN
+				,R.LOGIP
+				,R.WORKDTHM
+				,R.USERNM
+			FROM	
+			(			
+			
+					SELECT 
+								D.USERID
+								,D.USERGRPTYPE
+								,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0104', D.USERGRPTYPE) USERGRPTYPESTR
+								,D.LOGINTYPE
+								,D.LOGINYN
+								,D.LOGIP
+								,D.WORKDTHM
+								,D.USERNM
+					FROM	
+					(
+							SELECT 
+								I.USERID
+								,I.USERGRPTYPE
+								,I.LOGINTYPE
+								,I.LOGINYN
+								,I.LOGIP
+								,TO_CHAR(I.WORKDTHM, 'YYYY-MM-DD HH24:MI:SS') WORKDTHM
+								,SP_DEC_FU(U.USERNM) USERNM
+							FROM TMAD_LOGLOGIN  I , TMAD_USER U
+							WHERE  I.USERID = U.USERID(+) 
+								AND TO_CHAR(I.WORKDTHM, 'YYYYMMDD')	 <![CDATA[ >= ]]> #{in_calr_start} 
+								AND TO_CHAR(I.WORKDTHM, 'YYYYMMDD')	 <![CDATA[ <= ]]> #{in_calr_end} 
+								ORDER BY I.WORKDTHM DESC
+					) D	
+						WHERE 1=1 
+						<if test="sel_keyword != null"> 
+							<if test='cmb_select_gubun == "I"'> 
+				        		<![CDATA[
+				        		AND UPPER(D.USERID) LIKE UPPER('%' || #{sel_keyword} || '%')
+				        		]]>					
+							</if>			
+							<if test='cmb_select_gubun == "U"'>
+				        		<![CDATA[
+				        		AND UPPER(D.USERNM) LIKE UPPER('%' || #{sel_keyword} || '%')
+				        		]]>					
+							</if>
+						</if>
+				) R	
+
+				
+	</select>	
+	
+	
+	<!--  web 로그목록 -->
+	<select id="selectWebLogList" parameterType="java.util.Map" resultType="java.util.Map">	
+			
+			SELECT 
+				ROWNUM RNUM
+				,D.USERID
+				,D.USERGRPTYPESTR
+				,D.PROCFUNC
+				,D.LOGIP
+				,D.WORKDTHM
+				,D.USERNM
+				,D.MENUNM
+				
+				FROM(	
+					SELECT 
+						I.USERID
+						,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0104', I.USERGRPTYPE) USERGRPTYPESTR
+						,I.PROCFUNC
+						,I.LOGIP
+						,TO_CHAR(I.WORKDTHM, 'YYYY-MM-DD HH24:MI:SS') WORKDTHM
+						,SP_DEC_FU(U.USERNM) USERNM
+						,M.MENUNM
+					FROM TMAD_LOGWEB  I , TMAD_USER U , TMAD_MENU M
+					WHERE  I.USERID = U.USERID(+) 
+						AND I.MENUID = M.MENUID(+) 
+						AND TO_CHAR(I.WORKDTHM, 'YYYYMMDD')	 <![CDATA[ >= ]]> #{in_calr_start} 
+						AND TO_CHAR(I.WORKDTHM, 'YYYYMMDD')	 <![CDATA[ <= ]]> #{in_calr_end} 
+						ORDER BY I.WORKDTHM DESC
+				) D
+
+				
+	</select>	
+	
+	<!--  web 로그목록 -->
+	<select id="selectWebLogListNew" parameterType="java.util.Map" resultType="java.util.Map">	
+		SELECT 
+			SEQ, USERID, USERNM, LOGIP, USERGRPTYPE, SCHCD, ORGCD, SCHNM, SURVSEQ, SURVKINDCD, ALLMENUNM, ACTION, STRPARAM, TO_CHAR(MODDTHM, 'YYYY-MM-DD HH24:MI:SS') MODDTHM  
+		FROM
+			TMAD_ACCESSLOG
+		WHERE
+			1=1
+			AND TO_CHAR(MODDTHM, 'YYYYMMDD')	 <![CDATA[ >= ]]> #{IN_CALR_START} 
+			AND TO_CHAR(MODDTHM, 'YYYYMMDD')	 <![CDATA[ <= ]]> #{IN_CALR_END} 			
+			AND LOGIP<![CDATA[ <> ]]>'0:0:0:0:0:0:0:1'
+			<if test='IN_TARGET == "BASIC"'>
+       			AND ALLMENUNM LIKE '%담당자관리%'
+       		</if> 
+			<if test="IN_MENUNM != null">
+       			AND ALLMENUNM LIKE UPPER('%' || #{IN_MENUNM} || '%')
+       		</if>        	       		
+			<if test="IN_ACTION != null">
+       			AND ACTION LIKE '%' || #{IN_ACTION} || '%'
+       		</if>        		
+			<if test="IN_SCH != null">
+	      		<![CDATA[
+	      			AND ( SCHCD LIKE UPPER('%' || #{IN_SCH} || '%') OR SCHNM LIKE UPPER('%' || #{IN_SCH} || '%') )
+	      		]]>				
+			</if> 
+		ORDER BY 
+			MODDTHM DESC
+	</select>	
+	
+	<!--  DB이력 목록 -->
+	<select id="selectDBHistoryList" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT ROWNUM RNUM,A.* FROM (	
+			SELECT
+				CHGTABLE,CHGTYPE,CHGIP,CHGPCNAME,CHGPCID,CHTCNT,TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') CHGDTHM, CHGMEMO
+			FROM
+				TMAD_DBHISTORY INF
+			WHERE
+				1=1
+				AND TO_CHAR(INF.CHGDTHM, 'YYYYMMDD')	 <![CDATA[ >= ]]> #{IN_CALR_START} 
+				AND TO_CHAR(INF.CHGDTHM, 'YYYYMMDD')	 <![CDATA[ <= ]]> #{IN_CALR_END}
+				<if test="IN_CHGTABLE != null">
+	       			AND INF.CHGTABLE = #{IN_CHGTABLE}
+	       		</if>
+				<if test="IN_CHGTYPE != null">
+	       			AND INF.CHGTYPE = #{IN_CHGTYPE}
+	       		</if>
+			GROUP BY 
+				CHGTABLE, CHGTYPE, CHGIP, CHGPCNAME, CHGPCID, CHTCNT, TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS'), CHGMEMO
+			ORDER BY
+				TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') DESC, CHGTABLE, CHGTYPE, CHGIP, CHGPCNAME, CHGPCID
+		) A
+	</select>	
+	
+	<!--  사용자이력 목록 -->
+	<select id="selectUSERHistoryList" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT ROWNUM RNUM,A.* FROM (	
+			SELECT
+				LOGTYPE, OLDUSERID, USERGRPTYPE, USERID, SP_DEC_FU(USERNM) USERNM, TELNO, SP_DEC_FU(MOBILENO) MOBILENO, FAXNO, SP_DEC_FU(EMAILADDR) EMAILADDR, SMSYN, WORKYN, ORIPASSWDYN, PSNINFOAGREE, PASSWDDIFFCNT, TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') CHGDTHM 
+				, SCHCD
+				, ORGCD
+				, SP_GET_SCHNM((SELECT MAX(SURVSEQ) FROM TMAD_SURVEY),'GP',INF.SCHCD) SCHNM 
+				, (SELECT DISTINCT CDNM FROM TCCM_CODE WHERE CDTYPE='1001' AND CD=INF.ORGCD) ORGNM			
+			FROM
+				THAD_USER INF
+			WHERE
+				1=1
+				AND TO_CHAR(INF.CHGDTHM, 'YYYYMMDD')	 <![CDATA[ >= ]]> #{IN_CALR_START} 
+				AND TO_CHAR(INF.CHGDTHM, 'YYYYMMDD')	 <![CDATA[ <= ]]> #{IN_CALR_END}
+			ORDER BY
+				TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') DESC
+		) A
+		
+	</select>	
+	
+	<!--  DB이력 상세 -->
+	<select id="selectDBHistoryDetail" parameterType="java.util.Map" resultType="java.util.Map">
+		<if test='IN_CHGTABLE == "GRDPSNINFO"'> 
+			SELECT
+				ROWNUM RNUM
+				,INF.*
+			FROM
+				THGP_GRDPSNINFO INF
+			WHERE
+				1=1
+				AND TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') = #{IN_CHGDTHM} 
+				AND CHGPCNAME = #{IN_CHGPCNAME}
+				AND CHGPCID = #{IN_CHGPCID}
+		</if>
+		
+		<if test='IN_CHGTABLE == "FRSPSNINFO"'> 
+			SELECT
+				ROWNUM RNUM
+				,INF.*
+			FROM
+				THFP_FRSPSNINFO INF
+			WHERE
+				1=1
+				AND TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') = #{IN_CHGDTHM} 
+				AND CHGPCNAME = #{IN_CHGPCNAME}
+				AND CHGPCID = #{IN_CHGPCID}
+		</if> 	
+		
+		<if test='IN_CHGTABLE == "ATRGRDINFO"'>
+			SELECT
+				ROWNUM RNUM
+				,INF.*
+			FROM
+				THAG_ATRGRDINFO INF
+			WHERE
+				1=1
+				AND TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') = #{IN_CHGDTHM} 
+				AND CHGPCNAME = #{IN_CHGPCNAME}
+				AND CHGPCID = #{IN_CHGPCID}
+		</if>
+		
+		<if test='IN_CHGTABLE == "ATRGRDRST"'>
+			SELECT
+				ROWNUM RNUM
+				,INF.*
+			FROM
+				THAG_ATRGRDRST INF
+			WHERE
+				1=1
+				AND TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') = #{IN_CHGDTHM} 
+				AND CHGPCNAME = #{IN_CHGPCNAME}
+				AND CHGPCID = #{IN_CHGPCID}
+		</if>
+		
+		<if test='IN_CHGTABLE == "ATRGRDRSTFNL"'>
+			SELECT
+				ROWNUM RNUM
+				,INF.*
+			FROM
+				THAG_ATRGRDRSTFNL INF
+			WHERE
+				1=1
+				AND TO_CHAR(INF.CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') = #{IN_CHGDTHM} 
+				AND CHGPCNAME = #{IN_CHGPCNAME}
+				AND CHGPCID = #{IN_CHGPCID}
+		</if>
+	</select>	
+		
+	<!--  코드 목록 -->
+	<select id="selectCodeList" parameterType="java.util.Map" resultType="java.util.Map">	
+			
+			SELECT 
+				ROWNUM RNUM
+				,D.CDTYPE
+				,D.CD
+				,D.CDNM
+				
+				FROM(	
+					SELECT 
+						I.CDTYPE
+						,I.CD
+						,I.CDNM
+					FROM TCCM_CODE  I 
+					WHERE   I.SURVSEQ = #{SURVSEQ} 
+						AND I.SURVKINDCD = #{SURVKINDCD}
+		
+						<if test="sel_keyword != null"> 
+							<if test='cmb_select_gubun == "C"'> 
+				        		<![CDATA[
+				        		AND UPPER(I.CD) LIKE UPPER('%' || #{sel_keyword} || '%')
+				        		]]>					
+							</if>			
+							<if test='cmb_select_gubun == "N"'>
+				        		<![CDATA[
+				        		AND UPPER(I.CDNM) LIKE UPPER('%' || #{sel_keyword} || '%')
+				        		]]>					
+							</if>
+							<if test='cmb_select_gubun == "G"'>
+				        		<![CDATA[
+				        		AND UPPER(I.CDTYPE) LIKE UPPER('%' || #{sel_keyword} || '%')
+				        		]]>					
+							</if>
+						</if>
+						ORDER BY I.CDTYPE ,I.ORDERSEQ
+				) D
+		
+	</select>	
+		
+	
+	
+	<!--  화면공유 담당 -->
+	<select id="selectPubCharege" parameterType="java.util.Map" resultType="java.util.Map">	
+			
+            SELECT 
+                   D.SCHCD
+                 , SP_GET_NEWSCHNM(D.SCHCD, D.ORGCD) SCHNM
+                 , D.ORGCD
+                 , ( SELECT MAX(CDNM) FROM TCCM_CODE WHERE CDTYPE = '1001' AND CD = D.ORGCD ) ORGNM
+                 , D.USERID
+                 , ( SELECT SP_DEC_FU( USERNM )  FROM TMAD_USER WHERE USERID = D.USERID ) USERNM
+                 , DECODE(#{user_grp}, '4', '취업담당자', '전산담당자') as CHARGGRPNM	
+                 , #{user_grp} USERGRPTYPE			
+              FROM (	
+                    SELECT 
+                           I.SCHCD
+                         , I.ORGCD
+                         , I.USERID
+                      FROM TMAD_USERSCHOOL I, TMAD_USER U
+                     WHERE 1=1 
+                       AND I.USERGRPTYPE =  #{user_grp}
+                       AND I.USERID =  U.USERID                    
+                       AND U.WORKYN = '1'
+	        		<![CDATA[
+                       AND I.SCHCD||I.ORGCD IN ( SELECT SCHCD||ORGCD FROM TMAD_SCHOOL WHERE UPPER(SCHNM) LIKE UPPER('%' || #{sel_sch_nm} || '%') )
+	        		]]>
+				
+                   ) D 
+		
+	</select>	
+	<select id="selectPubCharege6" parameterType="java.util.Map" resultType="java.util.Map">	
+			
+            SELECT 
+                   D.SCHCD
+                 , ( SELECT MAX(SCHNM) FROM TMAD_SCHOOL WHERE SCHCD = D.SCHCD AND ORGCD = D.ORGCD ) SCHNM
+                 , D.ORGCD
+                 , ( SELECT MAX(CDNM) FROM TCCM_CODE WHERE CDTYPE = '1001' AND CD = D.ORGCD ) ORGNM
+                 , D.USERID
+                 , ( SELECT SP_DEC_FU( USERNM )  FROM TMAD_USER WHERE USERID = D.USERID ) USERNM
+                 , '학과담당자' AS CHARGGRPNM
+                 , '6' USERGRPTYPE
+              FROM (	
+					SELECT 
+                           I.SCHCD
+                         , I.ORGCD
+                         , I.USERID
+                      FROM TMAD_DEPTUSER  I, TMAD_USER U
+                     WHERE 1=1 
+                       AND I.USERID =  U.USERID
+                       AND U.WORKYN = '1'
+	        		<![CDATA[
+                       AND I.SCHCD||I.ORGCD IN ( SELECT SCHCD||ORGCD FROM TMAD_SCHOOL WHERE UPPER(SCHNM) LIKE UPPER('%' || #{sel_sch_nm} || '%') )
+	        		]]>					
+				) D 
+		
+	</select>			
+	
+	<update id="updateDBHMemo">
+		UPDATE 
+			TMAD_DBHISTORY
+		SET 
+			CHGMEMO=#{chgmemo}
+		WHERE
+			CHGTABLE = #{chgtable}
+			AND CHGPCID = #{chgpcid}
+			AND CHGIP = #{chgip}
+			AND TO_CHAR(CHGDTHM, 'YYYY-MM-DD HH24:MI:SS') = #{chgdthm}	
+	</update>		
+</mapper>	

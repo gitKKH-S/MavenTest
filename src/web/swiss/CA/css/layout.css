@@ -1,0 +1,291 @@
+.headerWrapper {
+  width: 1200px;
+  height: 130px;
+  display: flex;
+  justify-content: space-between;
+  overflow: hidden;
+  position: relative;
+  padding: 0 30px 0 21px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(328deg, #2f5dff 0%, #413eff 100%);
+  cursor: pointer;
+}
+.headerDeco1 {
+  position: absolute;
+  left: 0px;
+}
+.headerDeco2 {
+  position: absolute;
+  right: 0px;
+}
+.btnWrapper {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  z-index: 1;
+}
+.headerLBtn {
+  width: 260px;
+  height: 90px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0px 3px 15px 0px rgba(12, 47, 174, 0.5);
+  font-size: 20px;
+  font-weight: 700;
+  margin-right: 21px;
+  background-color: #fff;
+  color: #001A76;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: flex-start;
+  padding-top: 13px;
+  border: 2px solid #D1DBFF;
+}
+.headerLBtn:hover {
+  background-color: #001A76;
+  color: #fff;
+  transition-duration: .4s;
+  border: 2px solid #D1DBFF;
+}
+
+.headerLBtn:hover .headerArrowIcon {
+  content: url('../images/header_arrow.svg'); /* 이미지 변경 */
+}
+
+.haederLBtnActive {
+    width: 260px;
+    height: 90px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0px 3px 15px 0px rgba(12, 47, 174, 0.5);
+    font-size: 20px;
+    font-weight: 700;
+    margin-right: 21px;
+    background-color: #001A76;
+    color: #fff;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    padding-top: 13px;
+    border: 2px solid #D1DBFF;
+}
+
+.headerBtnArea {
+    padding-top: 10px;
+    padding-right: 10px;
+    width: 100%;
+    display: flex;
+    font-size: 14px;
+    padding-left: 10px;
+    align-items: center;
+    justify-content: space-between;
+    word-break: keep-all;
+    font-weight: 400;
+}
+
+.headerLBtn > span {
+  margin-top: 10.53px;
+}
+.rBtnWrapper {
+  display: flex;
+  height: 100%;
+  align-items: end;
+  z-index: 1;
+  padding-bottom: 21.25px;
+}
+.headerRBtn {
+  border-bottom: 1px solid #d1dbff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 12px;
+  margin-left: 15px;
+  padding: 8px 0px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.headerRBtn:hover {
+  border-bottom: 1px solid #00D4A1;
+  transition-duration: .2s;
+}
+
+.headerRBtn2 {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 12px;
+    margin-left: 15px;
+    padding: 8px 0px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.headerRBtn2:hover {
+    color: red;
+    transition-duration: .2s;
+}
+
+.headerRBtn2:hover svg path {
+    fill: red;
+    transition-duration: .2s;
+}
+
+.contentWrapper {
+  width: 1200px;
+}
+.contentTitle {
+  margin-top: 20px;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+}
+.contentTitle > span {
+  color: #1d45d2;
+  font-size: 40px;
+  font-weight: 900;
+}
+.yearWrapper {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.yearWrapper > span {
+  margin-right: 7px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.80);
+
+}
+
+/* selectBox */
+.cont-select {
+  position: relative;
+  background-color: transparent;
+}
+
+.btn-select {
+  border-radius: 10px;
+  background-color: #fff;
+  width: 174px;
+  height: 46px;
+  border: 1px solid #dcdfea;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.80);
+  font-family: 'Inter';
+}
+.btn-select.on {
+  background-color: #fff;
+  border-radius: 10px;
+  border: 1px solid #dcdfea;
+  width: 174px;
+  height: 46px;
+}
+.selectArrow {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  right: 13.95px;
+  top: 13px;
+}
+
+.list-member {
+  display: none;
+  position: absolute;
+  width: 100%;
+  /* 여기 top 부분 변경하시면 option 뜨는 위치 수정하실 수 있습니다. */
+  top: 0;
+  left: 0;
+  border-radius: 10px;
+  border: 1px solid #dcdfea;
+  background-color: #fff;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.btn-select.on + .list-member {
+  display: block;
+}
+
+.list-member li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  box-sizing: border-box;
+}
+
+.list-member li button {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background-color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.80);
+  font-weight: 700;
+  font-family: 'Inter';
+  /* 말줄임 */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  position: relative;
+}
+.selectUpArrow {
+  position: absolute;
+  right: 10px;
+  top: 13px;
+}
+
+.list-member li button:hover,
+.list-member li button:focus {
+  background-color: #f1f3f9;
+}
+
+.headerTitle {
+    width: 100%;
+    padding-left: 10px;
+}
+
+.headerCapStyle {
+    border-radius: 500px;
+    background-color: rgba(86.06250151991844, 123.22877079248428, 255, 1);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.headerCapTitle1 {
+    width: 140px;
+    height: 29px;
+    font-family: Noto Sans KR;
+    text-align: left;
+    font-size: 18px;
+    letter-spacing: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.headerCapTitle2 {
+    width: 140px;
+    height: 40px;
+    font-family: Noto Sans KR;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 15px;
+}

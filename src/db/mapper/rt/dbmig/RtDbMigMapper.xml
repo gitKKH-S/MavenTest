@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="RtDbMigMapper">
+
+	<select id="listResult" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH T_CODE AS (
+				SELECT B.SURVSEQ, B.SURVKINDCD, B.CDTYPE, B.CD, B.CDNM	
+				FROM TCCM_CODE B
+				WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD = #{SURVKINDCD}
+					AND B.CD != 'GROUPCD' AND B.CDTYPE IN ('1001','1004','0527','0529','2012','6007','2011','2001')
+		),BASE AS (	
+			SELECT 
+				T1.SURVSEQ
+				,T1.SURVKINDCD
+				<if test="SURVKINDCD == 'AG'">
+				,T1.SCHKINDCD
+				</if>
+				,T1.SCHCD 
+				<if test="SURVKINDCD == 'AG'">
+				,T5.SCHNM
+				</if>
+				,T1.ORGCD
+				,T1.COLCD ,T1.COLNM
+				,T1.DEPTCD ,T1.DEPTNM
+				<if test="SURVKINDCD == 'AG'">
+					,T1.MOECLASS
+				</if>
+				,T1.DNCD
+				,T1.DETAILDEPTNM
+				<if test="SURVKINDCD == 'AG'">
+				,T1.DEGREECD			
+				,T1.INYM
+				,T1.OUTYM
+				</if>
+				,DECODE(T1.EXCHANGEYN,'1','예','2','아니오') EXCHANGEYN
+				<if test="SURVKINDCD == 'AG'">
+				,T1.BIRTHYEAR
+				</if>
+				,T1.STUDENTNO,T1.UNIQUEKEY
+				,T1.SEXCD
+				<if test="SURVKINDCD == 'AG'">
+					,T1.AGE	
+				</if>
+				,T1.JOBTYPECD
+				<if test="SURVKINDCD == 'AG'">
+				,T1.WELFARECD
+				,T1.CLERICYN
+				,T1.STARTDT
+				,T1.ENDDT
+				,T1.SCHWORKFORM
+				,T1.WORKHOUR
+				,T1.NACODE
+				,T1.FORGCOMNM
+				,T1.OVERSEAVISATYPE
+				,T1.OVERSEAVISAYN
+				,T1.OVERSEAWORKTYPE
+				,T1.SAMEUNIVYN
+				,T1.GOSCHCD 
+				<if test="SURVKINDCD == 'AG'">
+				,T6.SCHNM AS GOSCHNM
+				</if>
+				,T1.GOORGCD
+				,T1.GOFORGSCHNM
+				</if>
+				,T7.JOBTYPEGROUPCD  
+				,T7.JOBTYPEGROUPNM  
+				<if test="SURVKINDCD == 'AG'">
+				,T1.ARTNM,T1.ARTPL,T1.ARTPO,T1.ALDYEMPLYN,T1.TRANSCLOSEYN
+				,T1.MNTNEMPLYN1,T1.MNTNEMPLYN2,T1.MNTNEMPLYN3,T1.MNTNEMPLYN4,T1.TARGETYN
+				,T1.SALARY,T1.INDLGROUPCD,T1.COMTYPE,T1.COMSIZE	
+				,T1.WORKERID
+				, T8.JOBTYPECD AS JOBTYPECD_BF
+				</if>
+				<if test="SURVKINDCD == 'GP'">
+				, SP_DEC_FU(T8.NAME) NAME
+				</if>
+			FROM 
+				<if test="SURVKINDCD == 'AG'">
+					TMAG_ATRGRDRST T1 
+				</if> 
+				<if test="SURVKINDCD == 'GP'">
+					TMGP_GRDPSNVIEW T1 
+				</if> 
+				<if test="SURVKINDCD == 'AG'">
+				, TMCM_GOSCHOOL T6
+				</if>
+				, TMAD_SCHOOL T5
+				, TCCM_JOBCODE T7
+				<if test="SURVKINDCD == 'AG'">
+					, TMAG_ATRGRDINFO T8 
+				</if> 
+				<if test="SURVKINDCD == 'GP'">
+					, TMgp_grdpsnINFO T8 
+				</if> 				
+			WHERE
+			 	T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				<if test="SURVKINDCD == 'AG'">
+				AND T1.SURVSEQ = T6.SURVSEQ(+)
+				AND T1.SURVKINDCD = T6.SURVKINDCD(+)
+				AND T1.GOSCHCD = T6.SCHCD(+)
+				AND T1.GOORGCD = T6.ORGCD(+)	
+				</if>				
+				AND T1.SURVSEQ = T5.SURVSEQ
+				AND T1.SURVKINDCD = T5.SURVKINDCD
+				AND T1.SCHCD = T5.SCHCD
+				AND T1.ORGCD = T5.ORGCD	
+				AND T1.SURVSEQ = T7.SURVSEQ(+)
+				AND T1.SURVKINDCD = T7.SURVKINDCD(+)	
+				AND DECODE(T1.JOBTYPECD,'52','51','4','80','14','81','16','82', T1.JOBTYPECD) = T7.JOBTYPECD(+)
+				AND T1.SURVSEQ = T8.SURVSEQ
+				AND T1.SURVKINDCD = T8.SURVKINDCD
+				AND T1.SCHCD = T8.SCHCD
+				AND T1.ORGCD = T8.ORGCD
+				AND T1.UNIQUEKEY = T8.UNIQUEKEY	
+								
+			<if test="DEPTCD != null">
+				AND T1.DEPTCD = #{DEPTCD} 
+			</if>
+			<if test="DNCD != null">
+				AND T1.DNCD = #{DNCD} 
+			</if>
+			<if test="STUDENTNO != null">
+				AND T1.STUDENTNO = #{STUDENTNO} 
+			</if>		
+			<if test="JOBTYPEGROUPCD != null">
+				<if test="JOBTYPEGROUPCD == 'none' ">
+				AND (T7.JOBTYPEGROUPCD is null or T7.JOBTYPEGROUPCD = '')
+				</if>
+				<if test="JOBTYPEGROUPCD != 'none' ">
+				AND T7.JOBTYPEGROUPCD  = #{JOBTYPEGROUPCD}
+				</if>
+			</if>			
+			<if test="UNIQUEKEY != null">
+				AND T1.UNIQUEKEY = #{UNIQUEKEY} 
+			</if>														
+		)
+		SELECT FNL.*  
+		FROM 
+			(
+			SELECT ROWNUM AS RNUM, F1.* FROM(
+				SELECT
+				 A.*
+				, B1.CDNM AS ORGNM 
+				<if test="SURVKINDCD == 'AG'">
+				, B2.CDNM AS SCHKINDNM  
+				</if>
+				, B4.CDNM AS DNNM 
+				, B5.CDNM AS SEXNM
+				<if test="SURVKINDCD == 'AG'"> 
+				, B6.CDNM AS SCHWORKFORMNM 
+				, B7.CDNM AS NACODENM 
+				, B8.CDNM AS OVERSEAWORKTYPENM 
+				, B9.CDNM AS GOORGNM 
+				</if>
+				, B10.CDNM AS JOBTYPENM 
+				<if test="SURVKINDCD == 'AG'">
+				, B11.CDNM AS JOBTYPENM_BF		
+				</if>									
+				FROM BASE A, T_CODE B1, T_CODE B4, T_CODE B5
+				<if test="SURVKINDCD == 'AG'">
+				, T_CODE B2, T_CODE B6, T_CODE B7, T_CODE B8, T_CODE B9
+				</if>
+				, T_CODE B10
+				<if test="SURVKINDCD == 'AG'">
+				, T_CODE B11
+				</if>
+				WHERE '1001' = B1.CDTYPE(+) AND A.ORGCD = B1.CD(+)
+					<if test="SURVKINDCD == 'AG'">
+					AND '0527' = B2.CDTYPE(+) AND A.SCHKINDCD = B2.CD(+)
+					</if>
+					AND '1004' = B4.CDTYPE(+) AND A.DNCD = B4.CD(+)
+					AND '0529' = B5.CDTYPE(+) AND A.SEXCD = B5.CD(+)
+					<if test="SURVKINDCD == 'AG'">
+					AND '2012' = B6.CDTYPE(+) AND A.SCHWORKFORM = B6.CD(+)
+					AND '6007' = B7.CDTYPE(+) AND A.NACODE = B7.CD(+)
+					AND '2011' = B8.CDTYPE(+) AND A.OVERSEAWORKTYPE = B8.CD(+)
+					AND '1001' = B9.CDTYPE(+) AND A.GOORGCD = B9.CD(+)
+					</if>	
+					AND '2001' = B10.CDTYPE(+) AND A.JOBTYPECD = B10.CD(+)
+					<if test="SURVKINDCD == 'AG'">
+					AND '2001' = B11.CDTYPE(+) AND A.JOBTYPECD_BF = B11.CD(+)
+					</if>	
+				ORDER BY  A.COLNM,A.DEPTNM,A.DETAILDEPTNM,A.DNCD
+				) F1				
+			) FNL
+		WHERE RNUM BETWEEN #{START} AND #{END}																					
+	</select>
+		
+	<select id="listResultTOTALPAGECNT" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT COUNT(*) TOTALPAGECNT
+			FROM 
+				<if test="SURVKINDCD == 'AG'">
+					TMAG_ATRGRDRST T1 
+				</if> 
+				<if test="SURVKINDCD == 'GP'">
+					TMGP_GRDPSNVIEW T1 
+				</if> 
+				<if test="SURVKINDCD == 'AG'">
+				, TMCM_GOSCHOOL T6
+				</if>
+				, TMAD_SCHOOL T5
+				, TCCM_JOBCODE T7
+				<if test="SURVKINDCD == 'AG'">
+					, TMAG_ATRGRDINFO T8 
+				</if> 
+				<if test="SURVKINDCD == 'GP'">
+					, TMgp_grdpsnINFO T8 
+				</if> 				
+			WHERE
+			 	T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				<if test="SURVKINDCD == 'AG'">
+				AND T1.SURVSEQ = T6.SURVSEQ(+)
+				AND T1.SURVKINDCD = T6.SURVKINDCD(+)
+				AND T1.GOSCHCD = T6.SCHCD(+)
+				AND T1.GOORGCD = T6.ORGCD(+)	
+				</if>				
+				AND T1.SURVSEQ = T5.SURVSEQ
+				AND T1.SURVKINDCD = T5.SURVKINDCD
+				AND T1.SCHCD = T5.SCHCD
+				AND T1.ORGCD = T5.ORGCD		
+				AND T1.SURVSEQ = T7.SURVSEQ(+)
+				AND T1.SURVKINDCD = T7.SURVKINDCD(+)	
+				AND DECODE(T1.JOBTYPECD,'52','51','4','80','14','81','16','82', T1.JOBTYPECD) = T7.JOBTYPECD(+)
+				AND T1.SURVSEQ = T8.SURVSEQ
+				AND T1.SURVKINDCD = T8.SURVKINDCD
+				AND T1.SCHCD = T8.SCHCD
+				AND T1.ORGCD = T8.ORGCD
+				AND T1.UNIQUEKEY = T8.UNIQUEKEY		
+			
+			<if test="DEPTCD != null">
+				AND T1.DEPTCD = #{DEPTCD} 
+			</if>
+			<if test="DNCD != null">
+				AND T1.DNCD = #{DNCD} 
+			</if>
+			<if test="STUDENTNO != null">
+				AND T1.STUDENTNO = #{STUDENTNO} 
+			</if>		
+			<if test="JOBTYPEGROUPCD != null">
+				<if test="JOBTYPEGROUPCD == 'none' ">
+				AND (T7.JOBTYPEGROUPCD is null or T7.JOBTYPEGROUPCD = '')
+				</if>
+				<if test="JOBTYPEGROUPCD != 'none' ">
+				AND T7.JOBTYPEGROUPCD  = #{JOBTYPEGROUPCD}
+				</if>
+			</if>	
+		
+			<if test="UNIQUEKEY != null">
+				AND T1.UNIQUEKEY = #{UNIQUEKEY} 
+			</if>															
+	</select>		
+		
+	<select id="listJobcode" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			T1.JOBTYPECD
+			,T1.JOBTYPENM
+			,T1.JOBTYPEGROUPCD
+			,T1.JOBTYPEGROUPNM
+			,T1.CHGROUPID
+			,T1.USEYN
+			,T1.MODIFYYN
+			,T1.ORDERSEQ
+			,T1.EVDDOCYN
+			,T1.FILEFORMNM
+		FROM TCCM_JOBCODE T1
+		WHERE
+		 	T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+	</select>	
+	<select id="listJobGroupCd" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			JOBTYPEGROUPCD 
+			, JOBTYPEGROUPNM
+			, MAX(ORDERSEQ )AS ORDERSEQ 
+			, MAX(JOBTYPECD ) AS JOBTYPECD 
+			, MAX(CHGROUPID) AS CHGROUPID
+		FROM TCCM_JOBCODE 
+		WHERE
+		 	SURVSEQ = #{SURVSEQ}
+			AND SURVKINDCD = #{SURVKINDCD}
+		GROUP BY JOBTYPEGROUPCD,JOBTYPEGROUPNM ORDER BY ORDERSEQ , JOBTYPECD			
+	</select>	
+		
+	<select id="listDeptcd" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			T1.DEPTCD
+			,T3.DEPTNM
+		FROM
+			<if test="SURVKINDCD == 'AG'">
+				TMAG_ATRGRDRSTVIEW T1 
+			</if> 
+			<if test="SURVKINDCD == 'GP'">
+				TMGP_GRDPSNVIEW T1 
+			</if> 
+			, TMCM_DEPT T3
+		WHERE
+		 	T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+			AND T1.SCHCD = #{SCHCD}
+			AND T1.ORGCD = #{ORGCD}	
+			AND T1.SURVSEQ = T3.SURVSEQ
+			AND T1.SURVKINDCD = T3.SURVKINDCD
+			AND T1.DEPTCD = T3.DEPTCD
+		GROUP BY T1.DEPTCD,T3.DEPTNM	
+	</select>	
+	<select id="listDncd" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			T1.DNCD, T2.CDNM
+		FROM 
+			<if test="SURVKINDCD == 'AG'">
+				TMAG_ATRGRDRSTVIEW T1 
+			</if> 
+			<if test="SURVKINDCD == 'GP'">
+				TMGP_GRDPSNVIEW T1 
+			</if> 
+			, TCCM_CODE T2
+		WHERE
+		 	T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+			AND T1.SCHCD = #{SCHCD}
+			AND T1.ORGCD = #{ORGCD}
+			AND T1.SURVSEQ = T2.SURVSEQ
+			AND T1.SURVKINDCD = T2.SURVKINDCD
+			AND T2.CDTYPE = '1004'
+			AND T1.DNCD = T2.CD
+		GROUP BY T1.DNCD, T2.CDNM		
+	</select>
+
+	<select id="listResultExcel" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH T_CODE AS (
+				SELECT B.SURVSEQ, B.SURVKINDCD, B.CDTYPE, B.CD, B.CDNM	
+				FROM TCCM_CODE B
+				WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD = #{SURVKINDCD}
+					AND B.CD != 'GROUPCD' AND B.CDTYPE IN ('1001','1004','0527','0529','2012','6007','2011','2001')
+		),BASE AS (	
+			SELECT 
+				T1.SURVSEQ
+				,T1.SURVKINDCD
+				<if test="SURVKINDCD == 'AG'">
+				,T1.SCHKINDCD
+				</if>
+				,T1.SCHCD
+				,T5.SCHNM
+				,T1.ORGCD
+				,T1.COLCD ,T1.COLNM
+				,T1.DEPTCD ,T1.DEPTNM
+				<if test="SURVKINDCD == 'AG'">
+					,T1.MOECLASS
+				</if>
+				,T1.DNCD,T1.DETAILDEPTNM
+				<if test="SURVKINDCD == 'AG'">
+				,T1.DEGREECD			
+				,T1.INYM,T1.OUTYM
+				</if>
+				,DECODE(T1.EXCHANGEYN,'1','예','2','아니오') EXCHANGEYN
+				,T1.STUDENTNO,T1.UNIQUEKEY
+				<if test="SURVKINDCD == 'AG'">
+				,T1.BIRTHYEAR
+				</if>
+				,T1.SEXCD
+				<if test="SURVKINDCD == 'AG'">
+					,T1.AGE	
+				</if>
+				,T1.JOBTYPECD
+				<if test="SURVKINDCD == 'AG'">
+				,T1.WELFARECD,T1.CLERICYN,T1.STARTDT,T1.ENDDT,T1.SCHWORKFORM
+				,T1.WORKHOUR,T1.NACODE,T1.FORGCOMNM,T1.OVERSEAVISATYPE,T1.OVERSEAVISAYN,T1.OVERSEAWORKTYPE
+				,T1.SAMEUNIVYN
+				,T1.GOSCHCD,T6.SCHNM AS GOSCHNM,T1.GOORGCD,T1.GOFORGSCHNM,T7.JOBTYPEGROUPCD  
+				,T7.JOBTYPEGROUPNM
+				,T1.ARTNM,T1.ARTPL,T1.ARTPO,T1.ALDYEMPLYN,T1.TRANSCLOSEYN
+				,T1.MNTNEMPLYN1,T1.MNTNEMPLYN2,T1.MNTNEMPLYN3,T1.MNTNEMPLYN4,T1.TARGETYN
+				,T1.SALARY,T1.INDLGROUPCD,T1.COMTYPE,T1.COMSIZE	
+				,T1.WORKERID
+				, T8.JOBTYPECD AS JOBTYPECD_BF
+				</if>
+				<if test="SURVKINDCD == 'GP'">
+				, SP_DEC_FU(T8.NAME) NAME
+				</if>
+			FROM 
+				<if test="SURVKINDCD == 'AG'">
+					TMAG_ATRGRDRST T1 
+				</if> 
+				<if test="SURVKINDCD == 'GP'">
+					TMGP_GRDPSNVIEW T1 
+				</if> 
+				<if test="SURVKINDCD == 'AG'">
+				, TMCM_GOSCHOOL T6
+				</if>
+				, TMAD_SCHOOL T5
+				, TCCM_JOBCODE T7
+				<if test="SURVKINDCD == 'AG'">
+					, TMAG_ATRGRDINFO T8 
+				</if> 
+				<if test="SURVKINDCD == 'GP'">
+					, TMgp_grdpsnINFO T8 
+				</if> 				
+			WHERE
+			 	T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				<if test="SURVKINDCD == 'AG'">
+				AND T1.SURVSEQ = T6.SURVSEQ(+)
+				AND T1.SURVKINDCD = T6.SURVKINDCD(+)
+				AND T1.GOSCHCD = T6.SCHCD(+)
+				AND T1.GOORGCD = T6.ORGCD(+)	
+				</if>				
+				AND T1.SURVSEQ = T5.SURVSEQ
+				AND T1.SURVKINDCD = T5.SURVKINDCD
+				AND T1.SCHCD = T5.SCHCD
+				AND T1.ORGCD = T5.ORGCD	
+				AND T1.SURVSEQ = T7.SURVSEQ(+)
+				AND T1.SURVKINDCD = T7.SURVKINDCD(+)	
+				AND DECODE(T1.JOBTYPECD,'52','51','4','80','14','81','16','82', T1.JOBTYPECD) = T7.JOBTYPECD(+)
+				AND T1.SURVSEQ = T8.SURVSEQ
+				AND T1.SURVKINDCD = T8.SURVKINDCD
+				AND T1.SCHCD = T8.SCHCD
+				AND T1.ORGCD = T8.ORGCD
+				AND T1.UNIQUEKEY = T8.UNIQUEKEY	
+								
+			<if test="DEPTCD != null">
+				AND T1.DEPTCD = #{DEPTCD} 
+			</if>
+			<if test="DNCD != null">
+				AND T1.DNCD = #{DNCD} 
+			</if>
+			<if test="STUDENTNO != null">
+				AND T1.STUDENTNO = #{STUDENTNO} 
+			</if>		
+			<if test="JOBTYPEGROUPCD != null">
+				AND T7.JOBTYPEGROUPCD  = #{JOBTYPEGROUPCD}
+			</if>			
+			<if test="UNIQUEKEY != null">
+				AND T1.UNIQUEKEY = #{UNIQUEKEY} 
+			</if>														
+		)
+		SELECT FNL.*  
+		FROM 
+			(
+			SELECT ROWNUM AS RNUM, F1.* FROM(
+				SELECT
+				 A.*
+				, B1.CDNM AS ORGNM 
+				, B4.CDNM AS DNNM 
+				, B5.CDNM AS SEXNM
+				<if test="SURVKINDCD == 'AG'">
+				, B2.CDNM AS SCHKINDNM
+				, B6.CDNM AS SCHWORKFORMNM 
+				, B7.CDNM AS NACODENM 
+				, B8.CDNM AS OVERSEAWORKTYPENM 
+				, B9.CDNM AS GOORGNM 
+				</if> 
+				, B10.CDNM AS JOBTYPENM 
+				<if test="SURVKINDCD == 'AG'">
+				, B11.CDNM AS JOBTYPENM_BF		
+				</if>									
+				FROM 
+					BASE A
+					, T_CODE B1
+					, T_CODE B4
+					, T_CODE B5
+					<if test="SURVKINDCD == 'AG'">
+					, T_CODE B2
+					, T_CODE B6
+					, T_CODE B7
+					, T_CODE B8
+					, T_CODE B9
+					</if>
+					, T_CODE B10
+				<if test="SURVKINDCD == 'AG'">
+				, T_CODE B11
+				</if>
+				WHERE '1001' = B1.CDTYPE(+) AND A.ORGCD = B1.CD(+)
+					AND '1004' = B4.CDTYPE(+) AND A.DNCD = B4.CD(+)
+					AND '0529' = B5.CDTYPE(+) AND A.SEXCD = B5.CD(+)
+					<if test="SURVKINDCD == 'AG'">
+					AND '0527' = B2.CDTYPE(+) AND A.SCHKINDCD = B2.CD(+)
+					AND '2012' = B6.CDTYPE(+) AND A.SCHWORKFORM = B6.CD(+)
+					AND '6007' = B7.CDTYPE(+) AND A.NACODE = B7.CD(+)
+					AND '2011' = B8.CDTYPE(+) AND A.OVERSEAWORKTYPE = B8.CD(+)
+					AND '1001' = B9.CDTYPE(+) AND A.GOORGCD = B9.CD(+)
+					</if>	
+					AND '2001' = B10.CDTYPE(+) AND A.JOBTYPECD = B10.CD(+)
+					<if test="SURVKINDCD == 'AG'">
+					AND '2001' = B11.CDTYPE(+) AND A.JOBTYPECD_BF = B11.CD(+)
+					</if>	
+				ORDER BY  A.COLNM,A.DEPTNM,A.DETAILDEPTNM,A.DNCD
+				) F1				
+			) FNL
+	</select>	
+	
+	<insert id="deleteRstView" parameterType="java.util.Map">
+		DELETE FROM 
+			<if test="SURVKINDCD == 'AG'">
+				TMAG_ATRGRDRSTVIEW T1 
+			</if> 
+			<if test="SURVKINDCD == 'GP'">
+				TMGP_GRDPSNVIEW T1 
+			</if> 		
+		WHERE
+		 	T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+			AND T1.SCHCD = #{SCHCD}
+			AND T1.ORGCD = #{ORGCD}		
+	</insert>	
+			    
+	<insert id="insertRstView" parameterType="java.util.Map">
+		INSERT INTO TMAG_ATRGRDRSTVIEW (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHKINDCD
+			,SCHCD
+			,ORGCD
+			,COLCD
+			,COLNM
+			,DEPTCD
+			,MOECLASS
+			,DEPTNM
+			,DNCD
+			,DETAILDEPTNM
+			,DEGREECD
+			,INYM
+			,OUTYM
+			,EXCHANGEYN
+			,STUDENTNO
+			,UNIQUEKEY
+			,BIRTHYEAR
+			,SEXCD
+			,AGE
+			,JOBTYPECD
+			,WELFARECD
+			,CLERICYN
+			,STARTDT
+			,ENDDT
+			,SCHWORKFORM
+			,WORKHOUR
+			,NACODE
+			,FORGCOMNM
+			,OVERSEAVISATYPE
+			,OVERSEAVISAYN
+			,OVERSEAWORKTYPE
+			,SAMEUNIVYN
+			,GOSCHCD
+			,GOORGCD
+			,GOFORGSCHNM
+			,ARTNM
+			,ARTPL
+			,ARTPO
+			,ALDYEMPLYN
+			,TRANSCLOSEYN
+			,MNTNEMPLYN1
+			,MNTNEMPLYN2
+			,MNTNEMPLYN3
+			,MNTNEMPLYN4
+			,TARGETYN
+			,SALARY
+			,INDLGROUPCD
+			,COMTYPE
+			,COMSIZE
+			,WORKERID
+			,WORKDTHM
+			) SELECT 
+			T1.SURVSEQ
+			,T1.SURVKINDCD
+			,T1.SCHKINDCD
+			,T1.SCHCD
+			,T1.ORGCD
+			,T1.COLCD
+			,T1.COLNM
+			,T1.DEPTCD
+			,T1.MOECLASS
+			,T1.DEPTNM
+			,T1.DNCD
+			,T1.DETAILDEPTNM
+			,T1.DEGREECD
+			,T1.INYM
+			,T1.OUTYM
+			,T1.EXCHANGEYN
+			,T1.STUDENTNO
+			,T1.UNIQUEKEY
+			,T1.BIRTHYEAR
+			,T1.SEXCD
+			,T1.AGE
+			,T1.JOBTYPECD
+			,T1.WELFARECD
+			,T1.CLERICYN
+			,T1.STARTDT
+			,T1.ENDDT
+			,T1.SCHWORKFORM
+			,T1.WORKHOUR
+			,T1.NACODE
+			,T1.FORGCOMNM
+			,T1.OVERSEAVISATYPE
+			,T1.OVERSEAVISAYN
+			,T1.OVERSEAWORKTYPE
+			,T1.SAMEUNIVYN
+			,T1.GOSCHCD
+			,T1.GOORGCD
+			,T1.GOFORGSCHNM
+			,T1.ARTNM
+			,T1.ARTPL
+			,T1.ARTPO
+			,T1.ALDYEMPLYN
+			,T1.TRANSCLOSEYN
+			,T1.MNTNEMPLYN1
+			,T1.MNTNEMPLYN2
+			,T1.MNTNEMPLYN3
+			,T1.MNTNEMPLYN4
+			,T1.TARGETYN
+			,T1.SALARY
+			,T1.INDLGROUPCD
+			,T1.COMTYPE
+			,T1.COMSIZE
+			,#{WORKERID}
+			,T1.WORKDTHM
+		FROM TMAG_ATRGRDRSTFNL T1		
+		WHERE
+		 	T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+			AND T1.SCHCD = #{SCHCD}
+			AND T1.ORGCD = #{ORGCD}		
+	</insert>		
+</mapper>

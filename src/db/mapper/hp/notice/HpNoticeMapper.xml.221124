@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="HpNoticeMapper">
+
+	<select id="searchNoticeCnt" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH TB_CNT AS (
+			SELECT 
+			 		A.BOARDSEQ, A.BBSNO, A.BOARDTYPECD, A.SURVYEAR, A.SURVKINDCD, B.CDNM AS SURVKINDNM
+			 		, A.REFNO, A.SUBJECT
+			 		, A.NOTICEYN, A.SECRETYN, A.HIT, A.DELYN
+			 		 , CASE 
+			 			WHEN (SELECT COUNT(ATT_IDT_NO) FROM TMHP_BOARDFILE WHERE ATT_IDT_NO = A.FILEID) > 0 THEN  '1' 
+			 			ELSE '2' END AS FILEYN
+					, A.WORKERID, NVL(SP_DEC_FU(COALESCE(A.WORKERNM, C.USERNM)), ' ') as WORKERNM, A.WORKDTHM  
+				FROM TMHP_BOARD A
+					LEFT OUTER JOIN (SELECT DISTINCT CD, CDNM
+									FROM TCCM_CODE
+									WHERE CDTYPE = '0079' AND CD != 'GROUPCD'
+										AND SURVSEQ = SUBSTR(#{SURVYEAR}, 3,2)||'1231') B ON A.SURVKINDCD = B.CD
+					LEFT OUTER JOIN TMAD_USER C ON A.WORKERID = C.USERID
+			<where>
+				BOARDSEQ = '1' 
+				AND NOT DELYN = '1'
+					<if test=' SURVYEAR != null and SURVYEAR != "" '>
+						AND A.SURVYEAR = #{SURVYEAR}
+					</if>
+					<if test=' SURVKINDCD != null and SURVKINDCD != "" '>
+						AND A.SURVKINDCD = #{SURVKINDCD}
+					</if>					
+			</where>
+		)
+		SELECT COUNT(BOARDSEQ) AS CNT
+		FROM TB_CNT
+		<where>
+			<if test=' KEYWORD != null and SUBJECT == "Y" '>
+				OR SUBJECT LIKE '%' || #{KEYWORD} || '%'			
+			</if>
+			<if test=' KEYWORD != null and TEXT == "Y" '>
+				OR <![CDATA[ CONTAINS(TEXT, '%' || #{KEYWORD} ||'%') > 0 ]]>			
+			</if>
+			<if test=' KEYWORD != null and WORKERNM == "Y" '>
+				OR WORKERNM LIKE '%' || #{KEYWORD} || '%'	
+			</if>		
+		</where>		
+	</select>
+	
+	<select id="searchNoticeList" parameterType="java.util.Map" resultType="java.util.Map">	 	
+	 	WITH T_BASE AS (
+	 		SELECT * FROM (
+				SELECT 
+			 		A.BOARDSEQ, A.BBSNO, A.BOARDTYPECD, A.SURVYEAR, A.SURVKINDCD, B.CDNM AS SURVKINDNM
+			 		, A.REFNO, A.SUBJECT
+			 		, A.NOTICEYN, A.SECRETYN, A.HIT, A.DELYN
+			 		 , CASE 
+			 			WHEN (SELECT COUNT(ATT_IDT_NO) FROM TMHP_BOARDFILE WHERE ATT_IDT_NO = A.FILEID) > 0 THEN  '1' 
+			 			ELSE '2' END AS FILEYN
+					, A.WORKERID, NVL(SP_DEC_FU(COALESCE(A.WORKERNM, C.USERNM)), ' ') as WORKERNM, A.WORKDTHM  
+				FROM TMHP_BOARD A
+					LEFT OUTER JOIN (SELECT DISTINCT CD, CDNM
+									FROM TCCM_CODE
+									WHERE CDTYPE = '0079' AND CD != 'GROUPCD'
+								) B ON A.SURVKINDCD = B.CD 
+					LEFT OUTER JOIN TMAD_USER C ON A.WORKERID = C.USERID
+				<where> 
+					/* 1.공지사항 ,2.취업통계소식, 3.자료실, 4.FAQ, 5.QnA */
+					A.BOARDSEQ = '1' 
+					AND NOT A.DELYN = '1' 				
+					<if test=' SURVYEAR != null and SURVYEAR != "" '>
+						AND A.SURVYEAR = #{SURVYEAR}
+					</if>
+					<if test=' SURVKINDCD != null and SURVKINDCD != "" '>
+						AND A.SURVKINDCD = #{SURVKINDCD}
+					</if>							
+				</where>
+			)
+			<where>
+				<if test=' KEYWORD != null and SUBJECT == "Y" '>
+					OR SUBJECT LIKE '%' || #{KEYWORD} || '%'			
+				</if>
+				<if test=' KEYWORD != null and TEXT == "Y" '>
+					OR <![CDATA[ CONTAINS(TEXT, '%' || #{KEYWORD} ||'%') > 0 ]]>			
+				</if>
+				<if test=' KEYWORD != null and WORKERNM == "Y" '>
+					OR WORKERNM LIKE '%' || #{KEYWORD} || '%'			
+				</if>			
+			</where>
+			ORDER BY WORKDTHM DESC		
+		)
+		SELECT * FROM (
+			SELECT 0 AS RNUM, T1.* FROM T_BASE T1
+				WHERE T1.NOTICEYN = '1'						
+			UNION
+			SELECT * FROM 
+				(
+					SELECT ROWNUM AS RNUM, T1.* FROM T_BASE T1
+					WHERE NOT T1.NOTICEYN = '1'
+				)
+			WHERE RNUM BETWEEN #{START} AND #{END}
+		)
+		ORDER BY RNUM, WORKDTHM DESC			
+	</select>
+	
+	<select id="selectNoticeView" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			A.BOARDSEQ, A.BBSNO, A.BOARDTYPECD, A.SURVYEAR, A.SURVKINDCD, A.REFNO
+			, A.SUBJECT, A.TEXT, A.NOTICEYN, A.SECRETYN, A.HIT, A.DELYN
+			, A.FILEID
+			, A.WORKERID, TO_CHAR(A.WORKDTHM, 'YYYY-MM-DD HH24:MI') AS WORKDTHM, A.MODIFIERID, A.MODDTHM 
+			, (SELECT DISTINCT CDNM
+							FROM TCCM_CODE
+							WHERE CDTYPE = '0079' 
+								AND CD != 'GROUPCD'							
+								AND CD = A.SURVKINDCD) AS SURVKINDNM
+			, NVL(SP_DEC_FU(COALESCE(A.WORKERNM, B.USERNM)), ' ') as WORKERNM
+			, NVL(B.DEPTNM, ' ') AS DEPTNM
+		FROM TMHP_BOARD A		
+			LEFT OUTER JOIN TMAD_USER B ON A.WORKERID = B.USERID	
+		WHERE A.BOARDSEQ = '1'
+			AND A.BBSNO = #{BBSNO}	
+	</select>
+	
+	<select id="selectYearList" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT DISTINCT SURVYEAR
+		FROM TMAD_SURVEY
+		ORDER BY SURVYEAR DESC	
+	</select>
+		
+	<insert id="insertNotice">
+		INSERT INTO TMHP_BOARD (
+			BOARDSEQ, BBSNO
+			, SURVYEAR, SURVKINDCD
+			, REFNO
+			, SUBJECT, TEXT
+			, NOTICEYN
+			, FILEID
+			, WORKERID
+			, WORKERNM
+		) VALUES (
+			'1', seq_board.nextval
+			, #{SURVYEAR}, #{SURVKINDCD}
+			, #{REFNO}
+			, #{SUBJECT}, #{TEXT}
+			, #{NOTICEYN}
+			, #{FILEID}
+			, #{WORKERID}
+			, SP_ENC_FU(#{WORKERNM})
+			)	
+	</insert>
+	
+	
+	<update id="updateNotice">
+		UPDATE TMHP_BOARD
+		SET 
+		    /*
+		    BOARDSEQ    = '1',		     
+		    BOARDTYPECD = '', 
+		    */
+		    SURVYEAR    = #{SURVYEAR}, 
+		    SURVKINDCD  = #{SURVKINDCD}, 
+		    /* REFNO       = '', */ 
+		    SUBJECT     = #{SUBJECT}, 
+		    TEXT        = #{TEXT}, 
+		    NOTICEYN    = #{NOTICEYN}, 
+		    /*
+		    SECRETYN    = '', 
+		    HIT         = '', 
+		    DELYN       = '', 
+ 			*/
+ 			FILEID		= #{FILEID},
+		    MODIFIERID  = #{MODIFIERID}, 
+		    MODDTHM     = SYSDATE
+		WHERE BBSNO = #{BBSNO}
+	</update>
+	
+	<update id="deleteNotice">
+		UPDATE TMHP_BOARD
+		SET
+		    DELYN       = '1', 
+		    MODIFIERID  = #{MODIFIERID}, 
+		    MODDTHM     = SYSDATE
+		WHERE BOARDSEQ    = '1'
+			AND BBSNO = #{BBSNO}	
+	</update>
+	
+	
+</mapper>

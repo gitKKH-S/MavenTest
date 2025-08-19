@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AgLinkResultMapper">
+	
+	<select id="listDept" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T1.SURVSEQ , T1.SURVKINDCD , T1.SCHCD , T1.ORGCD , T1.DEPTCD, T2.DEPTNM
+			FROM
+				TMAG_ATRGRDINFOBF T1, TMCM_DEPT T2
+			WHERE
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				AND T1.SURVSEQ = T2.SURVSEQ 
+				AND T1.SURVKINDCD = T2.SURVKINDCD 
+				AND T1.DEPTCD = T2.DEPTCD
+			GROUP BY
+				T1.SURVSEQ, T1.SURVKINDCD, T1.SCHCD, T1.ORGCD, T1.DEPTCD, T2.DEPTNM
+	</select>	
+
+	<select id="listDncd" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T2.CD , T2.CDNM
+			FROM
+				TMAG_ATRGRDINFOBF T1, TCCM_CODE T2
+			WHERE
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				AND T1.SURVSEQ = T2.SURVSEQ 
+				AND T1.SURVKINDCD = T2.SURVKINDCD 
+				AND T1.DNCD = T2.CD
+				AND T2.CDTYPE='1004'
+				AND T2.CD != 'GROUPCD'
+			GROUP BY
+				T1.SURVSEQ, T1.SURVKINDCD, T2.CD, T2.CDNM
+			ORDER BY T2.CD 
+	</select>
+	
+	<select id="listDept02" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T1.SURVSEQ , T1.SURVKINDCD , T1.SCHCD , T1.ORGCD , T1.DEPTCD,T1.DETAILDEPTNM, T1.DNCD, T2.DEPTNM
+			FROM
+				TMAD_DEPTUSER T1, TMCM_DEPT T2
+			WHERE
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				AND T1.USERID = #{USERID}
+				AND T1.SURVSEQ = T2.SURVSEQ 
+				AND T1.SURVKINDCD = T2.SURVKINDCD 
+				AND T1.DEPTCD = T2.DEPTCD
+	</select>
+		    
+	<select id="listLinkResult" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T1.COLNM
+				,T2.DEPTNM
+				,T1.DETAILDEPTNM
+				,T1.DEPTCD
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD, '1004', T1.DNCD) AS DNNM
+				,COUNT(*) JOBTYPECD_0
+				,SUM(DECODE(T1.JOBTYPECD,'27',1,'28',1,'29',1,'41',1,'42',1,'43',1,'44',1,'45',1,'46',1,'48',1,'51',1,'52',1,'32',1,'47',1,0)) AS JOBTYPECD_1 --취업
+				,SUM(DECODE(T1.JOBTYPECD,'70',1,'71',1,'72',1,'80',1,'81',1,'82',1,'4',1,'14',1,'16',1,0)) AS JOBTYPECD_2  --진학
+				,SUM(DECODE(T1.JOBTYPECD,'6',1,0)) AS JOBTYPECD_3  --입대
+				,SUM(DECODE(T1.JOBTYPECD,'33',1,'34',1,'35',1,'36',1,0)) AS JOBTYPECD_4 --취업불가
+				,SUM(DECODE(T1.EXCHANGEYN,'1',1,0)) AS JOBTYPECD_5 --외국인유학생
+				,SUM(DECODE(T1.JOBTYPECD,'61',1,'62',1,'64',1,'65',1,'66',1,0)) AS JOBTYPECD_6 -- 제외인정자
+				,SUM(CASE WHEN T1.JOBTYPECD IS NULL THEN 1 ELSE 0 END) AS JOBTYPECD_7 -- 입력대상
+			FROM
+				TMAG_ATRGRDINFOBF T1,
+				TMCM_DEPT T2
+				<if test='USERGRPTYPE == "6"'> 	
+				, TMAD_DEPTUSER T3	
+				</if>			
+			WHERE
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}		
+				AND T1.SURVSEQ = T2.SURVSEQ
+				AND T1.SURVKINDCD = T2.SURVKINDCD
+				AND T1.DEPTCD = T2.DEPTCD									
+				<if test='USERGRPTYPE == "6"'> 	
+					AND T1.SURVSEQ = T3.SURVSEQ
+					AND T1.SURVKINDCD = T3.SURVKINDCD
+					AND T1.SCHCD = T3.SCHCD
+					AND T1.ORGCD = T3.ORGCD
+					AND T1.COLCD = T3.COLCD
+					AND T1.DEPTCD = T3.DEPTCD
+					AND T1.DETAILDEPTNM = T3.DETAILDEPTNM
+					AND T1.DNCD = T3.DNCD		
+					AND T3.USERID = #{USERID}								
+				</if>					
+				<if test="DEPTCD != null">
+				AND T1.DEPTCD =  #{DEPTCD} 
+				</if>	
+				<if test="DNCD != null">
+				AND T1.DNCD =  #{DNCD} 
+				</if>					
+			GROUP BY
+				T1.SURVSEQ,
+				T1.SURVKINDCD,
+				T1.SCHCD,
+				T1.ORGCD,
+				T1.COLNM,
+				T1.DEPTCD,
+				T2.DEPTNM,
+				T1.DETAILDEPTNM,
+				T1.DNCD
+            ORDER BY T1.COLNM, T2.DEPTNM
+	</select>	
+	
+	<delete id="deleteTrag" parameterType="java.util.Map" >
+	    DELETE FROM TRAG_ATRGRDINFO A
+			WHERE A.SURVSEQ = #{SURVSEQ}
+				AND A.SURVKINDCD = #{SURVKINDCD}
+				AND A.SCHCD = #{SCHCD}
+				AND A.ORGCD = #{ORGCD}
+	</delete>	
+		
+	<insert id="insertTrag" parameterType="java.util.Map" >
+	    INSERT INTO TRAG_ATRGRDINFO (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHCD
+			,ORGCD
+			,UNIQUEKEY
+			,JOBTYPECD
+			,SCHWORKFORM
+			,WORKHOUR
+			,STARTDT
+			,ENDDT
+			,NACODE
+			,FORGCOMNM
+			,OVERSEAVISATYPE
+			,OVERSEAVISAYN
+			,OVERSEAWORKTYPE
+			,SAMEUNIVYN
+			,GOSCHCD
+			,GOORGCD
+			,GOFORGSCHNM
+			,ARTNM
+			,ARTPL
+			,ARTPO
+			,SAVEERRORCD		
+			,WORKERID
+			,WORKDTHM
+			) 
+	        SELECT A.SURVSEQ
+	        ,A.SURVKINDCD
+	        ,A.SCHCD
+			,A.ORGCD
+			,A.UNIQUEKEY
+			,A.JOBTYPECD
+			,A.SCHWORKFORM
+			,A.WORKHOUR
+			,A.STARTDT
+			,A.ENDDT
+			,A.NACODE
+			,A.FORGCOMNM
+			,A.OVERSEAVISATYPE
+			,A.OVERSEAVISAYN
+			,A.OVERSEAWORKTYPE
+			,A.SAMEUNIVYN
+			,A.GOSCHCD
+			,A.GOORGCD
+			,A.GOFORGSCHNM
+			,A.ARTNM
+			,A.ARTPL
+			,A.ARTPO
+			,DECODE(A.JOBTYPECD,NULL,'1','4') 	
+			,#{WORKERID}
+			,SYSDATE
+			FROM TMAG_ATRGRDINFOBF A
+			WHERE A.SURVSEQ = #{SURVSEQ}
+				AND A.SURVKINDCD = #{SURVKINDCD}
+				AND A.SCHCD = #{SCHCD}
+				AND A.ORGCD = #{ORGCD}
+	</insert>
+	
+	<select id="selectTragNo" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(SURVSEQ) CNT 
+		  FROM TRAG_ATRGRDINFO
+		 WHERE SURVSEQ = #{SURVSEQ}
+		   AND SURVKINDCD = #{SURVKINDCD}
+		   AND SCHCD = #{SCHCD}
+		   AND ORGCD = #{ORGCD}
+	</select>
+</mapper>

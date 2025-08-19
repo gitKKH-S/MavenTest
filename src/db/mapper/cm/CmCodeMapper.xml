@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmCodeMapper">
+	
+	<select id="selectCodeList" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			SURVSEQ, SURVKINDCD, CDTYPE, CD, CDNM, CDENGNM, ORDERSEQ
+		FROM TCCM_CODE
+		WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD = #{SURVKINDCD} AND CDTYPE = #{CDTYPE}  AND CD !='GROUPCD'
+		ORDER BY ORDERSEQ 			
+	</select>
+	
+	<select id="selectYearCodeList" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH T_SURV AS (
+			SELECT SURVSEQ, SURVKINDCD, SURVYEAR, SURVSTRTDT, SURVENDDT, SURVOBJ, SURVNM, REMARK, SURVSTATUSCD, WORKERID, WORKDTHM 
+			FROM TMAD_SURVEY 
+			WHERE SURVYEAR = #{SURVYEAR} AND SURVKINDCD = #{SURVKINDCD}
+		
+		)		
+		SELECT 
+			B.SURVSEQ, B.SURVKINDCD, B.CDTYPE, B.CD, B.CDNM, B.CDENGNM, B.ORDERSEQ
+		FROM T_SURV A
+			LEFT OUTER JOIN TCCM_CODE B ON A.SURVSEQ = B.SURVSEQ AND A.SURVKINDCD = B.SURVKINDCD
+		WHERE B.CDTYPE = #{CDTYPE} AND B.CD !='GROUPCD'
+		ORDER BY B.ORDERSEQ 		
+	</select>
+	
+	<select id="selectTopMenuList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT A.MENUNM, A.MENUID, A.MENULEVEL, A.PAGEID, A.TOPMENUID, A.MENUORDER
+					, A.UPMENUID, A.USEYN, A.PAGEURL, A.CSSCLASSNO
+			  FROM TMAD_MENU A, TMAD_USERGRPMENU B
+			 WHERE A.MENUID = B.MENUID(+) 
+			 	AND A.USEYN = 'Y'
+			 	AND B.GROUPCD = #{USERGRPTYPE}
+			 ORDER BY A.MENUID
+	</select>
+
+	
+</mapper>

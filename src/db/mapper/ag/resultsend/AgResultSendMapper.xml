@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AgResultSendMapper">
+	
+	<select id="listSchool" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 			
+				T1.SURVSEQ
+				,T1.SURVKINDCD
+				,T1.SCHCD 
+				,T1.SCHNM || '(' || SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) || ')' AS SCHNM
+				,T1.ORGCD
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'0083', T1.SURVPROSTATUSCD) AS STATUSCDNM
+			  FROM TMAD_SCHOOL T1, TMAD_DEPTUSER T2
+			 WHERE 
+				T1.SURVSEQ = T2.SURVSEQ
+				AND T1.SURVKINDCD = T2.SURVKINDCD
+				AND T1.SCHCD = T2.SCHCD
+				AND T1.ORGCD = T2.ORGCD						 
+				AND T2.SURVSEQ = #{SURVSEQ}
+				AND T2.SURVKINDCD = #{SURVKINDCD}
+				AND T2.USERID = #{USERID}
+	</select>	
+				
+	<select id="listResultSend" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT T1.SURVSEQ
+			,T1.SURVKINDCD
+			,T1.SCHCD
+			,T1.ORGCD
+			,T1.SCHNM
+			,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) AS ORGNM
+			,T1.SURVSTRTDT
+			,T1.SURVENDDT
+			,T1.SURVPROSTATUSCD
+			,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'0083', T1.SURVPROSTATUSCD) AS SURVPROSTATUSNM
+			,CASE WHEN TO_NUMBER(T1.SURVPROSTATUSCD) > '7' THEN TO_CHAR(T1.SURVPROSTATUSDTHM,'YYYY.MM.DD HH24:MI') ELSE '' END AS SURVPROSTATUSDTHM
+		  FROM TMAD_SCHOOL T1, TMAD_USERSCHOOL T2
+		 WHERE  
+			T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+			AND T1.SCHCD = T2.SCHCD
+			AND T1.ORGCD = T2.ORGCD
+			AND T2.USERID = #{USERID}
+	</select>	
+	
+	<select id="infoResultSend" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT T1.SURVSEQ
+			,T1.SURVKINDCD
+			,T1.SCHCD
+			,T1.ORGCD
+			,T1.SCHNM
+			,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) AS ORGNM
+			,T1.SURVSTRTDT
+			,T1.SURVENDDT
+			,T1.SURVPROSTATUSCD
+			,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'0083', T1.SURVPROSTATUSCD) AS SURVPROSTATUSNM
+			,CASE WHEN TO_NUMBER(T1.SURVPROSTATUSCD) > '7' THEN TO_CHAR(T1.SURVPROSTATUSDTHM,'YYYY.MM.DD HH24:MI') ELSE '' END AS SURVPROSTATUSDTHM
+		  FROM TMAD_SCHOOL T1, TMAD_USERSCHOOL T2
+		 WHERE  
+			T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+			AND T1.SCHCD = #{SCHCD}
+			AND T1.ORGCD = #{ORGCD}
+			AND T2.SCHCD = #{SCHCD}
+			AND T2.ORGCD = #{ORGCD}
+			AND T2.USERID = #{USERID}
+	</select>	
+	
+	<select id="listResultSendDept" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH T_CODE AS (
+			SELECT B.SURVSEQ, B.SURVKINDCD, B.CDTYPE, B.CD, B.CDNM	
+			FROM TCCM_CODE B
+			WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD = #{SURVKINDCD}
+				AND B.CD != 'GROUPCD' AND B.CDTYPE IN ('1001','1004','0083')
+		),BASE AS (		
+			SELECT 
+				T2.SURVSEQ,T2.SURVKINDCD,T2.SCHCD,T3.SCHNM,T2.ORGCD,T2.COLCD,T2.COLNM,T2.DEPTCD
+				,T2.DEPTNM,T2.DETAILDEPTNM,T2.DNCD,T4.PRGSTATUSCD
+				, CASE WHEN T4.PRGSTATUSCD > '3' THEN TO_CHAR(T4.PRGSTATUSDTHM,'YYYY.MM.DD HH24:MI') ELSE '' END AS PRGSTATUSDTHM,T4.USERID
+			FROM(
+				SELECT 
+					T1.SURVSEQ , T1.SURVKINDCD , T1.SCHCD , T1.ORGCD , T1.COLCD
+					,T1.COLNM,T1.DEPTNM , T1.DEPTCD , T1.DETAILDEPTNM , T1.DNCD						
+				FROM
+					TMAG_ATRGRDINFOBF T1, TRAG_ATRGRDINFO T2
+				 WHERE 
+					T1.SURVSEQ = #{SURVSEQ}
+					AND T1.SURVKINDCD = #{SURVKINDCD}
+					AND T1.SCHCD = #{SCHCD}
+					AND T1.ORGCD = #{ORGCD}
+					AND T1.SURVSEQ = T2.SURVSEQ 
+					AND T1.SURVKINDCD = T2.SURVKINDCD 
+					AND T1.SCHCD = T2.SCHCD 
+					AND T1.ORGCD = T2.ORGCD 
+					AND T1.UNIQUEKEY = T2.UNIQUEKEY 					
+				GROUP BY T1.SURVSEQ,T1.SURVKINDCD,T1.SCHCD,T1.ORGCD,T1.COLCD
+				,T1.COLNM,T1.DEPTNM,T1.DEPTCD,T1.DETAILDEPTNM,T1.DNCD
+			)T2, TMAD_SCHOOL T3, TMAD_DEPTUSER T4
+			WHERE 
+			T2.SURVSEQ = T3.SURVSEQ
+			AND T2.SURVKINDCD = T3.SURVKINDCD
+			AND T2.SCHCD = T3.SCHCD
+			AND T2.ORGCD = T3.ORGCD
+			AND T2.SURVSEQ = T4.SURVSEQ
+			AND T2.SURVKINDCD = T4.SURVKINDCD
+			AND T2.SCHCD = T4.SCHCD
+			AND T2.ORGCD = T4.ORGCD
+			AND T2.COLCD = T4.COLCD
+			AND T2.DEPTCD = T4.DEPTCD
+			AND T2.DETAILDEPTNM = T4.DETAILDEPTNM
+			AND T2.DNCD = T4.DNCD			
+			AND T4.USERID = #{USERID}
+		)
+		SELECT 
+			A.SURVSEQ,A.SURVKINDCD,A.SCHCD,A.SCHNM,A.ORGCD,A.COLCD,A.COLNM,A.DEPTCD
+			,A.DEPTNM,A.DETAILDEPTNM,A.DNCD,A.PRGSTATUSCD
+			,A.PRGSTATUSDTHM,A.USERID
+			,B1.CDNM AS ORGNM 
+			,B2.CDNM AS PRGSTATUSCDNM 
+			,B3.CDNM AS DNNM  			
+			FROM BASE A, T_CODE B1, T_CODE B2, T_CODE B3
+			WHERE '1001' = B1.CDTYPE(+) AND A.ORGCD = B1.CD(+)
+				AND '0083' = B2.CDTYPE(+) AND A.PRGSTATUSCD = B2.CD(+)
+				AND '1004' = B3.CDTYPE(+) AND A.DNCD = B3.CD(+)			
+	</select>		
+	
+	<select id="selectCheck" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(*) AS CNT
+		FROM TRAG_ATRGRDINFO 
+		 WHERE 					 
+			SURVSEQ = #{SURVSEQ}
+			AND SURVKINDCD = #{SURVKINDCD}			
+			AND SCHCD = #{SCHCD}
+			AND ORGCD = #{ORGCD}
+			AND (SAVEERRORCD != '4' OR JOBTYPECD IS NULL)	
+	</select>
+	<select id="selectCountCheck" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			(SELECT COUNT(*) AS CNT
+			FROM TMAG_ATRGRDINFOBF 
+			 WHERE 					 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}			
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}) AS CNT1
+			,(SELECT COUNT(*) AS CNT
+			FROM  TRAG_ATRGRDINFO
+			 WHERE 					 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}			
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}) AS CNT2
+			FROM DUAL
+	</select>	
+	
+	<select id="selectDeptCheck" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(*) AS CNT
+		FROM TRAG_ATRGRDINFO a,TMAG_ATRGRDINFOBF b
+		WHERE 					 
+			b.SURVSEQ = #{SURVSEQ}
+			AND b.SURVKINDCD = #{SURVKINDCD}				
+			AND b.SCHCD = #{SCHCD}
+			AND b.ORGCD = #{ORGCD}
+			AND b.COLCD = #{COLCD}				
+			AND b.DEPTCD = #{DEPTCD}	
+			AND b.DETAILDEPTNM = #{DETAILDEPTNM}	
+			AND b.DNCD = #{DNCD}
+			AND b.SURVSEQ = a.SURVSEQ
+			AND b.SURVKINDCD = a.SURVKINDCD			
+			AND b.SCHCD = a.SCHCD
+			AND b.ORGCD = a.ORGCD
+			AND b.UNIQUEKEY = a.UNIQUEKEY
+			AND a.SAVEERRORCD != '4'		
+	</select>
+	
+	<select id="selectDeptAPRCheck" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(*) AS CNT
+		FROM TMAD_DEPTUSER A
+		WHERE 					 
+			A.SURVSEQ = #{SURVSEQ}
+			AND A.SURVKINDCD = #{SURVKINDCD}				
+			AND A.SCHCD = #{SCHCD}
+			AND A.ORGCD = #{ORGCD}
+			AND A.PRGSTATUSCD != '5'		
+	</select>	
+		
+	<update id="updateSchoolStatus" parameterType="java.util.Map">
+		UPDATE TMAD_SCHOOL SET SURVPROSTATUSCD = #{SURVPROSTATUSCD} ,SURVPROSTATUSDTHM = SYSDATE
+		 WHERE 					 
+			SURVSEQ = #{SURVSEQ}
+			AND SURVKINDCD = #{SURVKINDCD}			
+			AND SCHCD = #{SCHCD}
+			AND ORGCD = #{ORGCD}		
+	</update>	
+	
+	<update id="updateDeptStatus" parameterType="java.util.Map">
+			UPDATE TMAD_DEPTUSER SET PRGSTATUSCD = #{STATUSCD},PRGSTATUSDTHM = SYSDATE
+									,MODIFIERID = #{WORKERID}, MODDTHM = sysdate
+			 WHERE 					 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND USERID = #{USERID}				
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND COLCD = #{COLCD}				
+				AND DEPTCD = #{DEPTCD}	
+				AND DETAILDEPTNM = #{DETAILDEPTNM}	
+				AND DNCD = #{DNCD}			
+	</update>	
+	
+	<delete id="deleteTrTable" parameterType="java.util.Map">
+			DELETE FROM TRAG_ATRGRDINFO 
+			 WHERE 					 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}			
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}		
+	</delete>	
+	
+	<delete id="deleteMstTable" parameterType="java.util.Map">
+			DELETE FROM TMAG_ATRGRDINFO 
+			 WHERE 					 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}			
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}		
+	</delete>	
+		
+	<insert id="insertMstTable" parameterType="java.util.Map">
+		INSERT INTO TMAG_ATRGRDINFO (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHKINDCD
+			,SCHCD
+			,ORGCD
+			,COLCD
+			,COLNM
+			,DEPTCD
+			,MOECLASS
+			,DEPTNM
+			,DNCD
+			,DETAILDEPTNM
+			,DEGREECD
+			,INYM
+			,OUTYM
+			,EXCHANGEYN
+			,STUDENTNO
+			,UNIQUEKEY
+			,BIRTHYEAR
+			,SEXCD
+			,AGE
+			,JOBTYPECD
+			,WELFARECD
+			,CLERICYN
+			,STARTDT
+			,ENDDT
+			,SCHWORKFORM
+			,WORKHOUR
+			,NACODE
+			,FORGCOMNM
+			,OVERSEAVISATYPE
+			,OVERSEAVISAYN
+			,OVERSEAWORKTYPE
+			,SAMEUNIVYN
+			,GOSCHCD
+			,GOORGCD
+			,GOFORGSCHNM
+			,ARTNM
+			,ARTPL
+			,ARTPO
+			,ALDYEMPLYN
+			,TRANSCLOSEYN
+			,MNTNEMPLYN1
+			,MNTNEMPLYN2
+			,MNTNEMPLYN3
+			,MNTNEMPLYN4
+			,TARGETYN
+			,SALARY
+			,INDLGROUPCD
+			,COMTYPE
+			,COMSIZE
+			,WORKERID
+			,WORKDTHM
+			) SELECT 
+			T1.SURVSEQ
+			,T1.SURVKINDCD
+			,T1.SCHKINDCD
+			,T1.SCHCD
+			,T1.ORGCD
+			,T1.COLCD
+			,T1.COLNM
+			,T1.DEPTCD
+			,T1.MOECLASS
+			,T1.DEPTNM
+			,T1.DNCD
+			,T1.DETAILDEPTNM
+			,T1.DEGREECD
+			,T1.INYM
+			,T1.OUTYM
+			,T1.EXCHANGEYN
+			,T1.STUDENTNO
+			,T1.UNIQUEKEY
+			,T1.BIRTHYEAR
+			,T1.SEXCD
+			,T1.AGE
+			,T2.JOBTYPECD
+			,T1.WELFARECD
+			,T1.CLERICYN
+			,T2.STARTDT
+			,T2.ENDDT
+			,T2.SCHWORKFORM
+			,T2.WORKHOUR
+			,T2.NACODE
+			,T2.FORGCOMNM
+			,T2.OVERSEAVISATYPE
+			,T2.OVERSEAVISAYN
+			,T2.OVERSEAWORKTYPE
+			,T2.SAMEUNIVYN
+			,T2.GOSCHCD
+			,T2.GOORGCD
+			,T2.GOFORGSCHNM
+			,T2.ARTNM
+			,T2.ARTPL
+			,T2.ARTPO
+			,T1.ALDYEMPLYN
+			,T1.TRANSCLOSEYN
+			,T1.MNTNEMPLYN1
+			,T1.MNTNEMPLYN2
+			,T1.MNTNEMPLYN3
+			,T1.MNTNEMPLYN4
+			,T1.TARGETYN
+			,T1.SALARY
+			,T1.INDLGROUPCD
+			,T1.COMTYPE
+			,T1.COMSIZE
+			,T2.WORKERID
+			,SYSDATE
+		FROM TMAG_ATRGRDINFOBF T1, TRAG_ATRGRDINFO T2			
+		WHERE
+		 	T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+			AND T1.SCHCD = #{SCHCD}
+			AND T1.ORGCD = #{ORGCD}
+			AND T1.SURVSEQ = T2.SURVSEQ
+			AND T1.SURVKINDCD = T2.SURVKINDCD
+			AND T1.SCHCD = T2.SCHCD
+			AND T1.ORGCD = T2.ORGCD
+			AND T1.UNIQUEKEY = T2.UNIQUEKEY			
+	</insert>	
+	
+	<insert id="insertAgEvdoc" parameterType="java.util.Map" flushCache="true">
+	    INSERT INTO TMAG_EVDDOC (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHCD
+			,ORGCD
+			,UNIQUEKEY
+			,EVDDOCSEQ
+			,PAGENO
+			,ISEVDDOCYN
+			,REGTYPE
+			,EVDDOCTYPE
+			,IMPROPTYN
+			,RTNRN
+			,ATT_IDT_NO
+			,ATT_SEQ
+			,EVDDOCETC			
+			,WORKERID
+			,WORKDTHM
+			) SELECT 
+			T1.SURVSEQ
+			,T1.SURVKINDCD
+			,T1.SCHCD
+			,T1.ORGCD
+			,T1.UNIQUEKEY
+			,1 AS EVDDOCSEQ
+			,NULL AS PAGENO
+			,'1' AS ISEVDDOCYN
+			,T2.EVDDOCKIND AS REGTYPE
+			,'1' AS EVDDOCTYPE
+			,NULL AS IMPROPTYN
+			,NULL AS RTNRN
+			,NULL ATT_IDT_NO
+			,NULL ATT_SEQ
+			,NULL AS EVDDOCETC			
+			,#{WORKERID}
+			,SYSDATE
+			FROM TMAG_ATRGRDINFO T1 
+				,( SELECT SCHCD,ORGCD,MAX(EVDDOCKIND) AS EVDDOCKIND 
+					FROM TMAD_USERSCHOOL WHERE USERGRPTYPE ='4' GROUP BY SCHCD,ORGCD) T2
+				,TMAG_ATRGRDINFOBF T3
+			WHERE
+			 	T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				AND T1.SCHCD = T2.SCHCD
+				AND T1.ORGCD = T2.ORGCD
+				AND T1.SURVSEQ = T3.SURVSEQ
+				AND T1.SURVKINDCD = T3.SURVKINDCD
+				AND T1.SCHCD = T3.SCHCD
+				AND T1.ORGCD = T3.ORGCD
+				AND T1.UNIQUEKEY = T3.UNIQUEKEY
+                AND ( T1.JOBTYPECD IN ('27','28','51','48','41','42','43','44','45','33','35','36','80','81','82','70','71','72','61','62','64','65','6')
+                        OR (T1.JOBTYPECD = '29' AND T3.JOBTYPECD = '28') )
+                /* 건보가입자: 27 / 교내취업자: 28 / 해외취업자: 51 / 농림어업: 48 / 개인창작: 41,42,43,44,45 / 취업불가능: 33,35,36  진학자: 국내 80,81,82 국외 70,71,72 / 제외인정: 61,62,64,65 / 입대자: 6 */
+                /* 교내취업자:28 > 교내취업자TLO:29 로 변경되었을때 */
+	</insert>
+			
+	<delete id="deleteAgEvdoc" parameterType="java.util.Map" >
+	    DELETE FROM TMAG_EVDDOC T1
+			WHERE
+			 	T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				AND T1.EVDDOCSEQ = 1				
+	</delete>	
+	
+	<delete id="deleteEvddocAll" parameterType="java.util.Map">
+			DELETE FROM TMAG_EVDDOC 
+			 WHERE 					 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}		
+	</delete>
+	
+	<insert id="insertTrTable" parameterType="java.util.Map">
+		INSERT INTO TRAG_ATRGRDINFO (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHCD
+			,ORGCD
+			,UNIQUEKEY
+			,JOBTYPECD
+			,STARTDT
+			,ENDDT
+			,SCHWORKFORM
+			,WORKHOUR
+			,NACODE
+			,FORGCOMNM
+			,OVERSEAVISATYPE
+			,OVERSEAVISAYN
+			,OVERSEAWORKTYPE
+			,SAMEUNIVYN
+			,GOSCHCD
+			,GOORGCD
+			,GOFORGSCHNM
+			,ARTNM
+			,ARTPL
+			,ARTPO
+			,SAVEERRORCD
+			,WORKERID
+			,WORKDTHM
+			) SELECT 
+			SURVSEQ
+			,SURVKINDCD
+			,SCHCD
+			,ORGCD
+			,UNIQUEKEY
+			,JOBTYPECD
+			,STARTDT
+			,ENDDT
+			,SCHWORKFORM
+			,WORKHOUR
+			,NACODE
+			,FORGCOMNM
+			,OVERSEAVISATYPE
+			,OVERSEAVISAYN
+			,OVERSEAWORKTYPE
+			,SAMEUNIVYN
+			,GOSCHCD
+			,GOORGCD
+			,GOFORGSCHNM
+			,ARTNM
+			,ARTPL
+			,ARTPO
+			,'4'
+			,WORKERID
+			,WORKDTHM
+		FROM TMAG_ATRGRDINFO 			
+		WHERE
+		 	SURVSEQ = #{SURVSEQ}
+			AND SURVKINDCD = #{SURVKINDCD}
+			AND SCHCD = #{SCHCD}
+			AND ORGCD = #{ORGCD}		
+	</insert>
+	<select id="verifyDataSchool" parameterType="java.util.Map" resultType="java.util.Map">
+		<if test="list.size != 0">
+			SELECT A.SCHCD
+			     , (SELECT SCHNM FROM TMAD_SCHOOL WHERE SURVSEQ = A.SURVSEQ AND SURVKINDCD = A.SURVKINDCD AND SCHCD = A.SCHCD AND ORGCD = A.ORGCD AND ROWNUM = 1) AS SCHNM
+			     , A.ORGCD
+			     , SP_CODENAME_FU(A.SURVSEQ, A.SURVKINDCD,'1001',A.ORGCD) AS ORGNM
+			     , '[취업구분:'||DECODE(A.JOBTYPECD,'28','교내취업자','52','취업자(해외취업자)',A.JOBTYPECD)||'] 시작일 또는 종료일을 입력하시지 않았습니다.' AS ERRDESC
+			     , '오류사항' AS ERRKINDNM
+			     , '2' AS ERRKINDCD
+			     , B.STUDENTNO
+			  FROM TRAG_ATRGRDINFO A
+			     , TMAG_ATRGRDINFOBF B
+			 WHERE 1=1
+			   AND A.SURVSEQ = B.SURVSEQ
+   			   AND A.SURVKINDCD = B.SURVKINDCD
+   			   AND A.SCHCD = B.SCHCD
+   			   AND A.ORGCD = B.ORGCD
+   			   AND A.UNIQUEKEY = B.UNIQUEKEY
+   		<foreach collection="list" item="k" index='index' separator=" ">
+			<if test='index == 0 '> 
+			   AND A.SURVSEQ = #{k.SURVSEQ}
+   			   AND A.SURVKINDCD = #{k.SURVKINDCD}
+			</if>
+		</foreach>
+   			   AND A.SCHCD||A.ORGCD IN
+   		<foreach collection="list" item="i" open="(" close=")" separator=","> 
+   			   		#{i.VERIFYDATA}
+   		</foreach>
+   			   AND A.JOBTYPECD IN ('28','25')
+   			   AND (A.STARTDT IS NULL OR A.STARTDT = '' OR A.ENDDT IS NULL OR A.ENDDT = '')
+   		</if>
+	</select>
+	
+	<select id="verifyDataDept" parameterType="java.util.Map" resultType="java.util.Map">
+		<if test="list.size != 0">
+			SELECT A.SCHCD
+                 , A.ORGCD
+                 , B.COLCD
+                 , B.COLNM
+                 , B.DEPTCD
+                 , B.DEPTNM
+                 , B.DETAILDEPTNM
+			     , '[취업구분:'||DECODE(A.JOBTYPECD,'28','교내취업자','52','취업자(해외취업자)',A.JOBTYPECD)||'] 시작일 또는 종료일을 입력하시지 않았습니다.' AS ERRDESC
+			     , '오류사항' AS ERRKINDNM
+			     , '2' AS ERRKINDCD
+			     , B.STUDENTNO
+			  FROM TRAG_ATRGRDINFO A
+			     , TMAG_ATRGRDINFOBF B
+			 WHERE 1=1
+			   AND A.SURVSEQ = B.SURVSEQ
+   			   AND A.SURVKINDCD = B.SURVKINDCD
+   			   AND A.SCHCD = B.SCHCD
+   			   AND A.ORGCD = B.ORGCD
+   			   AND A.UNIQUEKEY = B.UNIQUEKEY
+   		<foreach collection="list" item="k" index='index' separator=" ">
+			<if test='index == 0 '> 
+			   AND A.SURVSEQ = #{k.SURVSEQ}
+   			   AND A.SURVKINDCD = #{k.SURVKINDCD}
+   			   AND A.SCHCD = #{k.SCHCD}
+   			   AND A.ORGCD = #{k.ORGCD}
+			</if>
+		</foreach>
+   			   AND B.DEPTCD IN
+   		<foreach collection="list" item="i" open="(" close=")" separator=","> 
+   			   		#{i.DEPTCD}
+   		</foreach>
+   			   AND A.JOBTYPECD IN ('28','25')
+   			   AND (A.STARTDT IS NULL OR A.STARTDT = '' OR A.ENDDT IS NULL OR A.ENDDT = '')
+   		</if>
+	</select>
+
+</mapper>

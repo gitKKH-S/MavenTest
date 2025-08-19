@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmSurvInfoMapper">
+	
+	<select id="selectSurvInfo" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT REGEXP_REPLACE(SURVSEQ, '(.{2})(.{2})(.{2})', '\1.\2.\3') AS SURVSEQ
+					,SURVOBJ
+					,TO_CHAR(TO_DATE(SURVSTRTDT),'YYYY.MM.DD')
+					||'~'||TO_CHAR(TO_DATE(SURVENDDT),'YYYY.MM.DD')||'  ('||SURVNM ||')' AS SURVINFONM2
+					,SURVSEQ
+					,SURVSTRTDT
+					,SURVENDDT
+					,SURVNM
+			  FROM TMAD_SURVEY 
+			 WHERE 1=1			 
+			<if test="SURVSEQ != null">
+				AND SURVSEQ = #{SURVSEQ}
+			</if>
+			<if test="SURVKINDCD != null">
+				AND SURVKINDCD = #{SURVKINDCD}
+			</if>
+	</select>	
+	
+	<select id="listSchool" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 			
+				T1.SURVSEQ
+				,T1.SURVKINDCD
+				,T1.SCHCD||T1.ORGCD||T1.SCHKINDCD AS SCHORGCD
+				,T1.SCHNM || '(' || SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) || ')' AS SCHORGNM
+				,T1.ORGCD
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) AS ORGNM
+				,T2.CHGPSNYN
+				,T2.EVDDOCKIND 
+				,T1.SCHCD 
+				,T1.SCHNM 
+				,T1.SURVSTRTDT
+				,T1.SURVENDDT				
+				,T1.SURVPROSTATUSCD
+				,TO_CHAR(SYSDATE,'YYYYMMDD') AS SURVPROSTATUSDTHM
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,DECODE(#{SURVKINDCD},'AG','0083','GP','0081','FP','0082'), T1.SURVPROSTATUSCD) AS STATUSCDNM
+			  FROM TMAD_SCHOOL T1, TMAD_USERSCHOOL T2
+			 WHERE 
+				T1.SCHCD = T2.SCHCD
+				AND T1.ORGCD = T2.ORGCD						 
+				AND T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T2.USERID = #{USERID}
+			ORDER BY T1.SCHNM, T1.ORGCD
+	</select>
+	
+	<select id="schoolInfo" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 			
+			T1.SURVSEQ
+			,T1.SURVKINDCD
+			,T1.SCHCD||T1.ORGCD||T1.SCHKINDCD AS SCHORGCD
+			,T1.SCHNM || '(' || SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) || ')' AS SCHORGNM
+			,T1.ORGCD
+			,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) AS ORGNM
+			,T2.CHGPSNYN
+			,T2.EVDDOCKIND 
+			,T1.SCHCD 
+			,T1.SCHNM 
+			,T1.SURVSTRTDT
+			,T1.SURVENDDT				
+			,T1.SURVPROSTATUSCD
+			,TO_CHAR(SYSDATE,'YYYYMMDD') AS SURVPROSTATUSDTHM
+			,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,DECODE(#{SURVKINDCD},'AG','0083','GP','0081','FP','0082'), T1.SURVPROSTATUSCD) AS STATUSCDNM
+		  FROM TMAD_SCHOOL T1, TMAD_USERSCHOOL T2
+		 WHERE 
+			T1.SCHCD = T2.SCHCD
+			AND T1.ORGCD = T2.ORGCD						 
+			AND T1.SURVSEQ = #{SURVSEQ}
+			AND T1.SURVKINDCD = #{SURVKINDCD}
+			AND T1.SCHCD = #{SCHCD}
+			AND T2.USERID = #{USERID}
+		ORDER BY T1.SCHNM, T1.ORGCD
+	</select>
+	
+	<select id="listDeptSchool" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 			
+				T1.SURVSEQ
+				,T1.SURVKINDCD
+				,T1.SCHCD||T1.ORGCD AS SCHORGCD
+				,T1.SCHNM || '(' || SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) || ')' AS SCHORGNM
+				,T1.ORGCD
+				,T1.SCHCD 
+				,T1.SCHNM 
+				,T2.PRGSTATUSCD
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'0083', T2.PRGSTATUSCD) AS PRGSTATUSNM
+				,T1.SURVPROSTATUSCD
+				,T1.SURVSTRTDT
+				,T1.SURVENDDT
+				,TO_CHAR(SYSDATE,'YYYYMMDD') AS TO_DATE
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'0083', T1.SURVPROSTATUSCD) AS STATUSCDNM
+				,T3.EVDDOCKIND
+				,T3.CHGPSNYN
+			  FROM TMAD_SCHOOL T1, TMAD_DEPTUSER T2, TMAD_USERSCHOOL T3 
+			 WHERE 
+				T1.SURVSEQ = T2.SURVSEQ
+				AND T1.SURVKINDCD = T2.SURVKINDCD
+				AND T1.SCHCD = T2.SCHCD
+				AND T1.ORGCD = T2.ORGCD		
+				AND T1.SCHCD = T3.SCHCD
+				AND T1.ORGCD = T3.ORGCD	
+				AND T3.USERGRPTYPE ='4' 					 
+				AND T2.SURVSEQ = #{SURVSEQ}
+				AND T2.SURVKINDCD = #{SURVKINDCD}
+				AND T2.USERID = #{USERID}
+			ORDER BY T1.SCHNM, T1.ORGCD
+				
+	</select>			
+	<insert id="insertSurvMntr" parameterType="java.util.Map">
+		<selectKey resultType="int" keyProperty="MNTRSEQ" order="BEFORE">
+	        SELECT NVL(MAX(MNTRSEQ),0)+1 FROM TMAD_SURVMNTR  WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD =  #{SURVKINDCD} AND SCHCD = #{SCHCD} AND ORGCD =  #{ORGCD}       
+	    </selectKey> 	
+		INSERT INTO TMAD_SURVMNTR (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHCD
+			,ORGCD
+			,MNTRSEQ
+			,STATUSCD
+			,STATUSWKDTHM
+			,RCEPTCN
+			,ATT_IDT_NO
+			,ATT_SEQ
+			,WORKERID
+			,WORKDTHM
+			) VALUES
+	        (#{SURVSEQ}
+			,#{SURVKINDCD}
+			,#{SCHCD}
+			,#{ORGCD}
+			,#{MNTRSEQ}
+			,#{STATUSCD}
+			,SYSDATE
+			,#{RCEPTCN}
+			,#{ATT_IDT_NO}
+			,#{ATT_SEQ}			
+			,#{WORKERID}
+			,SYSDATE	
+			)
+	</insert>	
+	
+	<insert id="insertSurvMntrByDept" parameterType="java.util.Map">
+		<selectKey resultType="int" keyProperty="MNTRSEQ" order="BEFORE">
+	        SELECT NVL(MAX(MNTRSEQ),0)+1 FROM TMAD_SURVMNTR  WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD =  #{SURVKINDCD} AND SCHCD = #{SCHCD} AND ORGCD =  #{ORGCD}       
+	    </selectKey> 	
+		INSERT INTO TMAD_SURVMNTR (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHCD
+			,ORGCD
+			,MNTRSEQ
+			,STATUSCD
+			,STATUSWKDTHM
+			,RCEPTCN
+			,ATT_IDT_NO
+			,ATT_SEQ
+			,WORKERID
+			,WORKDTHM
+			,DEPTCD
+			,DETAILDEPTNM
+			,DNCD			
+			) VALUES
+	        (#{SURVSEQ}
+			,#{SURVKINDCD}
+			,#{SCHCD}
+			,#{ORGCD}
+			,#{MNTRSEQ}
+			,#{STATUSCD}
+			,SYSDATE
+			,#{RCEPTCN}
+			,#{ATT_IDT_NO}
+			,#{ATT_SEQ}			
+			,#{WORKERID}
+			,SYSDATE	
+			,#{DEPTCD}
+			,#{DETAILDEPTNM}
+			,#{DNCD}
+			)
+	</insert>
+	
+	<insert id="insertSurvMntrBySmsDept" parameterType="java.util.Map">
+		<selectKey resultType="int" keyProperty="MNTRSEQ" order="BEFORE">
+	        SELECT NVL(MAX(MNTRSEQ),0)+1 FROM TMAD_SURVMNTR  WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD =  #{SURVKINDCD} AND SCHCD = #{SCHCD} AND ORGCD =  #{ORGCD}       
+	    </selectKey> 	
+		INSERT INTO TMAD_SURVMNTR (
+			SURVSEQ
+			,SURVKINDCD
+			,SCHCD
+			,ORGCD
+			,MNTRSEQ
+			,STATUSCD
+			,STATUSWKDTHM
+			,RCEPTCN
+			,ATT_IDT_NO
+			,ATT_SEQ
+			,WORKERID
+			,WORKDTHM
+			,DEPTCD
+			,DETAILDEPTNM
+			,DNCD			
+			) 
+	        SELECT A.SURVSEQ 
+			     , A.SURVKINDCD 
+			     , A.SCHCD 
+			     , A.ORGCD 
+			     , ROWNUM + #{MNTRSEQ}
+			     , #{STATUSCD}
+			     , SYSDATE
+			     , #{RCEPTCN}
+			     , #{ATT_IDT_NO}
+			     , #{ATT_SEQ}
+			     , #{WORKERID}
+			     , SYSDATE
+			     , A.DEPTCD
+			     , A.DETAILDEPTNM 
+			     , A.DNCD
+			  FROM TMAD_DEPTUSER A
+			 WHERE A.SURVSEQ = #{SURVSEQ}
+			   AND A.SURVKINDCD = #{SURVKINDCD}
+			   AND A.SCHCD = #{SCHCD}
+			   AND A.ORGCD = #{ORGCD}
+			   AND A.USERID = #{USERID}
+	</insert>	
+		
+	<update id="updateSchoolStatus" parameterType="java.util.Map">
+		UPDATE TMAD_SCHOOL 
+		SET 
+			SURVPROSTATUSCD = #{STATUSCD}
+			,SURVPROSTATUSDTHM	= SYSDATE
+			,MODIFIERID = #{WORKERID}
+			,MODDTHM = SYSDATE
+		WHERE SURVSEQ = #{SURVSEQ}
+			AND SURVKINDCD = #{SURVKINDCD}
+			AND SCHCD = #{SCHCD}
+			AND ORGCD = #{ORGCD}	
+	</update>	
+		
+	<update id="updateDeptStatus" parameterType="java.util.Map">
+			UPDATE TMAD_DEPTUSER 
+			SET PRGSTATUSCD = #{STATUSCD}
+				,PRGSTATUSDTHM = SYSDATE
+				,MODIFIERID = #{WORKERID}
+				,MODDTHM = SYSDATE
+			 WHERE 					 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND USERID = #{USERID}				
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND COLCD = #{COLCD}				
+				AND DEPTCD = #{DEPTCD}	
+				AND DETAILDEPTNM = #{DETAILDEPTNM}	
+				AND DNCD = #{DNCD}			
+	</update>		
+	
+	<select id="selectSchoolList" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH T_CODE AS (
+			SELECT B.SURVSEQ, B.SURVKINDCD, B.CDTYPE, B.CD, B.CDNM	
+			FROM TCCM_CODE B
+			WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD = #{SURVKINDCD}
+				AND B.CD != 'GROUPCD' AND B.CDTYPE IN ('1001','0060','0527')
+		),BASE AS (
+			SELECT A.*
+		  	FROM TMAD_SCHOOL A
+			 WHERE A.SURVSEQ = #{SURVSEQ}
+				AND A.SURVKINDCD = #{SURVKINDCD}
+				<if test="SCHCD != null">
+					AND A.SCHCD = #{SCHCD}
+				</if>
+				<if test="SCHNM != null">
+					AND A.SCHNM like '%'|| #{SCHNM} ||'%'
+				</if>					
+		)
+		SELECT * FROM 
+			(
+			SELECT ROWNUM AS RNUM, A.SCHNM
+			,A.SCHCD
+			,A.ORGCD
+			,B.CDNM AS ORGNM
+			,A.SCHKINDCD	
+			,C.CDNM AS SCHKINDNM
+			,A.UNIGRADECD
+			,D.CDNM AS UNIGRADENM FROM BASE A, T_CODE B, T_CODE C, T_CODE D
+			WHERE '1001' = B.CDTYPE(+)
+			AND A.ORGCD = B.CD(+)
+			AND '0527' = C.CDTYPE(+)
+			AND A.SCHKINDCD = C.CD(+)
+			AND '0060' = D.CDTYPE(+)
+		 	AND A.UNIGRADECD = D.CD(+)
+			
+		)
+		WHERE RNUM BETWEEN #{START} AND #{END}	
+		 
+	</select>
+	
+	<select id="selectSchoolListCall" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH T_CODE AS (
+			SELECT B.SURVSEQ, B.SURVKINDCD, B.CDTYPE, B.CD, B.CDNM	
+			FROM TCCM_CODE B
+			WHERE SURVSEQ = SP_GET_LAST_SURVSEQ() and SURVKINDCD='AG'
+				AND B.CD != 'GROUPCD' AND B.CDTYPE IN ('1001','0060','0527')
+		),BASE AS (
+			SELECT A.*
+		  	FROM TMAD_SCHOOL A
+			 WHERE A.SURVSEQ = SP_GET_LAST_SURVSEQ() 
+				<if test="SCHNM != null">
+					AND A.SCHNM like '%'|| upper(#{SCHNM}) ||'%'
+				</if>					
+		)
+		SELECT * FROM 
+			(
+			SELECT ROWNUM AS RNUM, A.SCHNM
+			,A.SCHCD
+			,A.ORGCD
+			,B.CDNM AS ORGNM
+			,A.SCHKINDCD	
+			,C.CDNM AS SCHKINDNM
+			,A.UNIGRADECD
+			,D.CDNM AS UNIGRADENM FROM BASE A, T_CODE B, T_CODE C, T_CODE D
+			WHERE '1001' = B.CDTYPE(+)
+			AND A.ORGCD = B.CD(+)
+			AND '0527' = C.CDTYPE(+)
+			AND A.SCHKINDCD = C.CD(+)
+			AND '0060' = D.CDTYPE(+)
+		 	AND A.UNIGRADECD = D.CD(+)
+			
+		)
+	</select>	
+	
+	<select id="selectUserListCall" parameterType="java.util.Map" resultType="java.util.Map">
+		select
+		    USR.usergrptype USRGRP
+		    , (select cdnm from tccm_code where cdtype='0104' and survseq='231231' and survkindcd='GP' and cd=USR.usergrptype) USRGRPNM
+		    , SP_DEC_FU(usernm) USRNM
+		    , SP_DEC_FU(emailaddr) EMAIL
+		    , TELNO
+		from
+		    tmad_user USR
+		    left outer join tmad_userschool USCH on USR.userid=USCH.userid
+		    left outer join tmad_school SCH on USCH.schcd=SCH.schcd and USCH.orgcd=SCH.orgcd and SCH.survseq='211231' and SCH.survkindcd='GP'
+		where 
+		    USR.workyn='1'
+		    and USCH.SCHCD = #{SCHCD}
+		    and USCH.ORGCD = #{ORGCD}
+	</select>		
+	
+	<select id="selectSchoolListTOTALPAGECNT" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT COUNT(*) TOTALPAGECNT
+		  	FROM TMAD_SCHOOL A
+			 WHERE A.SURVSEQ = #{SURVSEQ}
+				AND A.SURVKINDCD = #{SURVKINDCD}
+			<if test="SCHCD != null">
+				AND A.SCHCD = #{SCHCD}
+			</if>
+			<if test="SCHNM != null">
+				AND A.SCHNM like '%'|| #{SCHNM} ||'%'
+			</if>		
+	</select>
+
+	<select id="selectSurvSchool" parameterType="java.util.Map" resultType="java.util.Map">
+	
+		SELECT A.SCHCD
+             , A.ORGCD
+             , SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1001', A.ORGCD) AS ORGNM
+             , B.SCHNM
+             , B.SURVSTRTDT
+             , B.SURVENDDT
+             , B.SURVSEQ, #{USERGRPTYPE} USERGRPTYPE
+             , (SELECT SURVNM FROM TMAD_SURVEY WHERE SURVSEQ = B.SURVSEQ AND SURVKINDCD = #{SURVKINDCD} ) AS SURVNM
+             , (SELECT SURVOBJ FROM TMAD_SURVEY WHERE SURVSEQ = B.SURVSEQ AND SURVKINDCD = #{SURVKINDCD} ) AS SURVOBJ
+             , TO_CHAR(SYSDATE,'YYYYMMDD') AS TODATE
+             , B.SURVPROSTATUSCD
+		<if test='USERGRPTYPE != "6"'>             
+          FROM TMAD_USERSCHOOL A
+		</if>
+		<if test='USERGRPTYPE == "6"'>             
+          FROM TMAD_DEPTUSER A
+		</if>
+             , (
+                SELECT SCHCD, ORGCD, SCHNM, SURVSTRTDT, SURVENDDT, MAX(SURVSEQ) AS SURVSEQ, SURVPROSTATUSCD
+                  FROM TMAD_SCHOOL
+                 WHERE SURVSTRTDT <![CDATA[ <= ]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+                   AND SURVENDDT <![CDATA[ >= ]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+                   AND SURVKINDCD = #{SURVKINDCD}
+                 GROUP BY SCHCD, ORGCD, SCHNM, SURVSTRTDT, SURVENDDT, SURVPROSTATUSCD
+               ) B
+         WHERE A.SCHCD = B.SCHCD(+)
+           AND A.ORGCD = B.ORGCD(+)
+           AND A.USERID = #{USERID}
+		 
+	</select>
+	
+	<select id="selectChgSchool" parameterType="java.util.Map" resultType="java.util.Map">
+	
+		SELECT A.SCHCD
+             , A.ORGCD
+             , B.SCHNM
+             , B.ORGNM
+             , C.SURVSTRTDT
+             , C.SURVENDDT
+             , C.SURVSEQ
+             , #{SURVKINDCD} SURVKINDCD
+             , #{USERGRPTYPE} USERGRPTYPE
+             , (SELECT SURVNM FROM TMAD_SURVEY WHERE SURVSEQ = C.SURVSEQ AND SURVKINDCD = #{SURVKINDCD} ) AS SURVNM
+             , (SELECT SURVOBJ FROM TMAD_SURVEY WHERE SURVSEQ = C.SURVSEQ AND SURVKINDCD = #{SURVKINDCD} ) AS SURVOBJ
+             , TO_CHAR(SYSDATE,'YYYYMMDD') AS TODATE
+             , C.SURVPROSTATUSCD
+             , SP_CODENAME_FU(C.SURVSEQ, #{SURVKINDCD}, DECODE(#{SURVKINDCD},'AG','0083','GP','0081','FP','0082'), C.SURVPROSTATUSCD) AS SURVPROSTATUSCDNM
+             , SCHTEXT1
+             , SCHTEXT2
+             , SCHTEXT3
+             , A.EVDDOCKIND
+             , A.CHGPSNYN
+             , (SELECT CHARGENM||'('||TELNO||')' FROM TCCM_CHARGE WHERE SCHCD = A.SCHCD AND ORGCD = A.ORGCD) AS CHARGENM
+             , (SELECT SP_DEC_FU(USERNM)||'('||TELNO||')' FROM TMAD_USERSCHOOL TMS, TMAD_USER TMU WHERE TMS.USERID=TMU.USERID AND TMS.SCHCD=A.SCHCD AND TMS.ORGCD=A.ORGCD AND TMU.USERGRPTYPE='4' AND TMU.WORKYN='1') AS OWNERNM
+		<if test='USERGRPTYPE != "6"'>             
+          FROM TMAD_USERSCHOOL A
+		</if>
+		<if test='USERGRPTYPE == "6"'>             
+          FROM (SELECT SCHCD, ORGCD, USERID, '' AS EVDDOCKIND, '1' AS CHGPSNYN 
+        		  FROM TMAD_DEPTUSER 
+        		 WHERE SURVSEQ = (SELECT MAX(SURVSEQ) FROM TMAD_SCHOOL WHERE SURVKINDCD = #{SURVKINDCD} )
+        		   AND SURVKINDCD = #{SURVKINDCD} 
+        		 GROUP BY SCHCD, ORGCD, USERID) A
+		</if>
+             , (
+                SELECT SCHCD, ORGCD, SCHNM, SP_CODENAME_FU(SURVSEQ, #{SURVKINDCD},'1001', ORGCD) AS ORGNM
+                     , SCHNM || '(' || SP_CODENAME_FU(SURVSEQ, #{SURVKINDCD},'1001', ORGCD) || ')' SCHTEXT1
+                     , SCHNM || '(' || SCHCD || ')'  SCHTEXT2
+                     , SCHNM || '(' || SCHCD || ') (' || SP_CODENAME_FU(SURVSEQ, #{SURVKINDCD},'1001', ORGCD) || ')'  SCHTEXT3
+		          FROM (
+		 				SELECT ROW_NUMBER() OVER(PARTITION BY SCHCD, ORGCD ORDER BY SURVSEQ DESC, DECODE(SURVKINDCD,'FP','1','AG','2','GP','3') DESC) AS RNUM
+		 				     , SCHCD, ORGCD, SCHNM, SURVSEQ
+		                  FROM TMAD_SCHOOL
+		                 WHERE 1=1
+		                   AND SURVKINDCD = #{SURVKINDCD} 
+		               )
+		         WHERE RNUM = 1
+               ) B
+		     , (
+                SELECT SURVSEQ, SCHCD, ORGCD, SURVSTRTDT, SURVENDDT, SURVPROSTATUSCD
+		          FROM (
+		 				SELECT ROW_NUMBER() OVER(PARTITION BY SCHCD, ORGCD ORDER BY SURVSEQ DESC) AS RNUM
+		 				     , SURVSEQ, SCHCD, ORGCD, SCHNM, SURVSTRTDT, SURVENDDT, SURVPROSTATUSCD
+		                  FROM TMAD_SCHOOL
+		                 WHERE 1=1
+		                   AND SURVKINDCD = #{SURVKINDCD}
+		               )
+		         WHERE RNUM = 1
+               ) C
+         WHERE A.SCHCD = B.SCHCD
+           AND A.ORGCD = B.ORGCD
+           AND A.SCHCD = C.SCHCD
+           AND A.ORGCD = C.ORGCD
+           AND A.USERID = #{USERID}
+		 
+	</select>
+	
+</mapper>

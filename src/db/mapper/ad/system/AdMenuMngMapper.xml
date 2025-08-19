@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdMenuMngMapper">
+
+    <select id="selectAllMenu" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT TOPMENUID, MENUID, PAGEID, MENUNM, MENULEVEL, MENUORDER, UPMENUID, USEYN, TOPMENUID||MENUID AS KEY
+			  FROM TMAD_MENU
+			 WHERE 1=1
+			 AND USEYN = 'Y'
+			 START WITH UPMENUID IS NULL
+			 CONNECT BY PRIOR MENUID = UPMENUID
+			 ORDER SIBLINGS BY MENUORDER
+	</select>
+
+
+	<select id="selectSubMenu" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT A.TOPMENUID,
+			       A.MENULEVEL,
+			       A.MENUID,
+			       A.MENUNM,
+			       NVL(A.PAGEID,'') AS PAGEID,
+			       NVL(A.PAGENM,'') AS PAGENM,
+			       A.MENUORDER,
+			       A.UPMENUID,
+			       A.USEYN,
+			       A.DISPLAYYN,
+			       A.PAGEID,
+			       A.PAGENM,
+			       A.PAGEURL,
+			       A.CSSCLASSNO
+			  FROM TMAD_MENU A
+			 WHERE 1=1
+			 	AND A.USEYN = 'Y'
+
+			   <if test="MENULEVEL != '-1'">
+			   AND A.TOPMENUID = #{TOPMENUID}
+			   </if>
+			   AND (A.UPMENUID = #{MENUID} OR A.MENUID = #{MENUID})
+			 ORDER BY A.MENULEVEL, A.MENUORDER, A.MENUID
+	</select>
+
+	<insert id="insertMenu" parameterType="java.util.Map">
+			INSERT INTO TMAD_MENU(
+				TOPMENUID
+				, MENUID
+				, MENUNM
+				, MENULEVEL
+				, MENUORDER
+				, UPMENUID
+				
+				, USEYN
+				, DISPLAYYN
+				, PAGEID
+				, PAGENM
+				, PAGEURL
+				,CSSCLASSNO
+				, WORKERID
+				, WORKDTHM
+			)
+			VALUES(
+				#{TOPMENUID}
+				, #{MENUID}
+				, #{MENUNM}
+				, #{MENULEVEL}
+				, #{MENUORDER}
+				, #{UPMENUID}
+				, #{USEYN}
+				, #{DISPLAYYN}
+				, #{PAGEID}
+				, #{PAGENM}
+				, #{PAGEURL}
+				, #{CSSCLASSNO}
+				, #{WORKERID}
+				, SYSDATE
+				)	
+    </insert>
+	
+    <update id="updateMenu" parameterType="java.util.Map">
+			UPDATE TMAD_MENU SET
+				TOPMENUID = #{TOPMENUID},			
+				MENUNM = #{MENUNM},
+				MENULEVEL = #{MENULEVEL},
+				MENUORDER = #{MENUORDER},
+				UPMENUID = #{UPMENUID},
+				USEYN = #{USEYN},
+				DISPLAYYN = #{DISPLAYYN},
+				PAGEID = #{PAGEID},
+				PAGENM = #{PAGENM},
+				PAGEURL = #{PAGEURL},
+				CSSCLASSNO =  #{CSSCLASSNO},
+				MODDTHM = SYSDATE
+			WHERE TOPMENUID = #{TOPMENUID}
+			  AND MENUID = #{MENUID}
+    </update>
+
+
+	<!-- 그룹정보 가져오기 -->
+	<select id="selectUserGrpSearch" parameterType="java.util.Map" resultType="java.util.Map">
+            SELECT CD
+                 , CDNM
+              FROM TCCM_CODE 
+             WHERE 
+				 	SURVSEQ = #{SURVSEQ}
+				 	AND SURVKINDCD = #{SURVKINDCD}
+				 	AND CDTYPE = '0104'
+				 	ORDER BY CD
+
+	</select>
+
+	<select id="selectUserGrpMenu" parameterType="java.util.Map" resultType="java.util.Map">
+ 
+			SELECT  
+				B.TOPMENUID, B.MENUID, B.PAGEID, B.MENUNM, B.MENULEVEL,B.MENUORDER, B.UPMENUID, B.USEYN
+				, CASE WHEN B.KEY IS NULL THEN 0 ELSE 1 END AS KEY
+				,'' KEYSTR
+			FROM(
+				SELECT A.TOPMENUID, A.MENUID, A.PAGEID, A.MENUNM, A.MENULEVEL,A.MENUORDER, A.UPMENUID, A.USEYN
+				, (SELECT MENUID FROM TMAD_USERGRPMENU WHERE GROUPCD = #{GROUPCD} AND MENUID = A.MENUID) AS KEY
+				  FROM TMAD_MENU A
+				 WHERE 1=1
+				 AND USEYN = 'Y'
+				 START WITH UPMENUID IS NULL
+				 CONNECT BY PRIOR MENUID = UPMENUID
+				 ORDER SIBLINGS BY MENUORDER
+			) B			 
+			 
+	</select>
+	
+	<insert id="saveUserGrpPageMenu" parameterType="java.util.Map">
+		<selectKey resultType="int" keyProperty="SEQ" order="BEFORE">
+	        SELECT NVL(MAX(SEQ),0)+1 FROM TMAD_USERGRPMENU        
+	    </selectKey>	
+			INSERT INTO TMAD_USERGRPMENU (SEQ, GROUPCD, MENUID)
+			VALUES(#{SEQ}, #{GROUPCD}, #{MENUID})
+
+    </insert>
+
+    <delete id="deleteUserGrp" parameterType="java.util.Map">
+         	DELETE FROM TMAD_USERGRPMENU
+        	 WHERE GROUPCD = #{GROUPCD}
+    </delete>		
+	
+
+
+</mapper>

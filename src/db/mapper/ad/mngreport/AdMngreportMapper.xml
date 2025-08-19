@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdMngreportMapper">
+	
+	<select id="mngreportList" parameterType="java.util.Map" resultType="java.util.LinkedHashMap">				
+		SELECT 
+			SURVSEQ
+			,MENU_NM
+			,GROUP_NM
+			,GROUP_ORDER
+			,BUTTON_NM
+			,BUTTON_ORDER
+			,BBUILD_SQL
+			,GET_SQL
+			,TARGET_TABLE
+			,EXEC_USERID
+			,EXEC_USERNM
+			,TO_CHAR(EXEC_DATETIME,'YYYY.MM.DD HH24:MI') AS EXEC_DATETIME
+		FROM	
+		TMAD_MNGREPORT_MAIN
+		WHERE 1=1
+			<if test="MENU_NM != null">
+			AND MENU_NM= #{MENU_NM} 
+			</if> 
+			<if test="SURVSEQ != null">
+			AND SURVSEQ= #{SURVSEQ} 
+			</if>
+		ORDER BY GROUP_ORDER ,BUTTON_ORDER, TARGET_TABLE	
+	</select>	
+	
+	<select id="selectTargetTable" parameterType="java.util.Map" resultType="java.util.LinkedHashMap">				
+		SELECT
+			*
+		FROM
+			<if test="T_TABLE == 'TSRT_AR111'">
+				TSRT_AR111
+			</if>
+			<if test="T_TABLE == 'TSRT_AR112'">
+				TSRT_AR112
+			</if>
+			<if test="T_TABLE == 'TSRT_AR113'">
+				TSRT_AR113
+			</if>
+			<if test="T_TABLE == 'TSRT_AR114'">
+				TSRT_AR114
+			</if>
+			<if test="T_TABLE == 'TSRT_AR121'">
+				TSRT_AR121
+			</if>
+			<if test="T_TABLE == 'TSRT_AR122'">
+				TSRT_AR122
+			</if>
+			<if test="T_TABLE == 'TSRT_AR123'">
+				TSRT_AR123
+			</if>			
+			<if test="T_TABLE == 'TSRT_AR131'">
+				TSRT_AR131
+			</if>
+			<if test="T_TABLE == 'TSRT_AR132'">
+				TSRT_AR132
+			</if>
+			<if test="T_TABLE == 'TSRT_AR133'">
+				TSRT_AR133
+			</if>			
+			<if test="T_TABLE == 'TSRT_AR211'">
+				TSRT_AR211
+			</if>
+			<if test="T_TABLE == 'TSRT_AR212'">
+				TSRT_AR212
+			</if>
+			<if test="T_TABLE == 'TSRT_AR221'">
+				TSRT_AR221
+			</if>
+			<if test="T_TABLE == 'TSRT_AR222'">
+				TSRT_AR222
+			</if>
+			<if test="T_TABLE == 'TSRT_AR231'">
+				TSRT_AR231
+			</if>
+			<if test="T_TABLE == 'TSRT_AR232'">
+				TSRT_AR232
+			</if>
+			<if test="T_TABLE == 'TSRT_AR311'">
+				TSRT_AR311
+			</if>
+			<if test="T_TABLE == 'TSRT_AR312'">
+				TSRT_AR312
+			</if>
+			<if test="T_TABLE == 'TSRT_AR321'">
+				TSRT_AR321
+			</if>
+			<if test="T_TABLE == 'TSRT_AR322'">
+				TSRT_AR322
+			</if>
+			<if test="T_TABLE == 'TSRT_AR331'">
+				TSRT_AR331
+			</if>
+			<if test="T_TABLE == '3TSRT_AR33232'">
+				TSRT_AR332
+			</if>
+			<if test="T_TABLE == 'TSRT_AR411'">
+				TSRT_AR411
+			</if>
+			<if test="T_TABLE == 'TSRT_AR412'">
+				TSRT_AR412
+			</if>
+			<if test="T_TABLE == 'TSRT_AR421'">
+				TSRT_AR421
+			</if>
+			<if test="T_TABLE == 'TSRT_AR422'">
+				TSRT_AR422
+			</if>
+			<if test="T_TABLE == 'TSRT_AR431'">
+				TSRT_AR431
+			</if>
+			<if test="T_TABLE == 'TSRT_AR432'">
+				TSRT_AR432
+			</if>
+			<if test="T_TABLE == 'TSRT_AR511'">
+				TSRT_AR511
+			</if>
+			<if test="T_TABLE == 'TSRT_AR512'">
+				TSRT_AR512
+			</if>
+			<if test="T_TABLE == 'TSRT_AR521'">
+				TSRT_AR521
+			</if>
+			<if test="T_TABLE == 'TSRT_AR522'">
+				TSRT_AR522
+			</if>
+			<if test="T_TABLE == 'TSRT_AR531'">
+				TSRT_AR531
+			</if>
+			<if test="T_TABLE == 'TSRT_AR532'">
+				TSRT_AR532
+			</if>
+			<if test="T_TABLE == 'TSRT_AR611'">
+				TSRT_AR611
+			</if>
+			<if test="T_TABLE == 'TSRT_AR612'">
+				TSRT_AR612
+			</if>
+			<if test="T_TABLE == 'TSRT_AR621'">
+				TSRT_AR621
+			</if>
+			<if test="T_TABLE == 'TSRT_AR622'">
+				TSRT_AR622
+			</if>
+			<if test="T_TABLE == 'TSRT_AR631'">
+				TSRT_AR631
+			</if>
+			<if test="T_TABLE == 'TSRT_AR632'">
+				TSRT_AR632
+			</if>
+			<if test="T_TABLE == 'TSRT_AR711'">
+				TSRT_AR711
+			</if>
+			<if test="T_TABLE == 'TSRT_AR712'">
+				TSRT_AR712
+			</if>
+			<if test="T_TABLE == 'TSRT_AR721'">
+				TSRT_AR721
+			</if>
+			<if test="T_TABLE == 'TSRT_AR722'">
+				TSRT_AR722
+			</if>
+			<if test="T_TABLE == 'TSRT_AR731'">
+				TSRT_AR731
+			</if>
+			<if test="T_TABLE == 'TSRT_AR732'">
+				TSRT_AR732
+			</if>
+			<if test="T_TABLE == 'TSRT_AR811'">
+				TSRT_AR811
+			</if>
+			<if test="T_TABLE == 'TSRT_AR812'">
+				TSRT_AR812
+			</if>
+			<if test="T_TABLE == 'TSRT_AR821'">
+				TSRT_AR821
+			</if>
+			<if test="T_TABLE == 'TSRT_AR822'">
+				TSRT_AR822
+			</if>
+			<if test="T_TABLE == 'TSRT_AR831'">
+				TSRT_AR831
+			</if>
+			<if test="T_TABLE == 'TSRT_AR832'">
+				TSRT_AR832
+			</if>
+			<if test="T_TABLE == 'TSRT_ART111'">
+				TSRT_ART111
+			</if>
+			<if test="T_TABLE == 'TSRT_ART112'">
+				TSRT_ART112
+			</if>
+			<if test="T_TABLE == 'TSRT_ART113'">
+				TSRT_ART113
+			</if>
+			<if test="T_TABLE == 'TSRT_ART211'">
+				TSRT_ART211
+			</if>
+			<if test="T_TABLE == 'TSRT_ART212'">
+				TSRT_ART212
+			</if>
+			<if test="T_TABLE == 'TSRT_ART213'">
+				TSRT_ART213
+			</if>
+			<if test="T_TABLE == 'TSRT_ART214'">
+				TSRT_ART214
+			</if>
+			<if test="T_TABLE == 'TSRT_ART215'">
+				TSRT_ART215
+			</if>
+			<if test="T_TABLE == 'TSRT_ART216'">
+				TSRT_ART216
+			</if>					
+			<if test="T_TABLE == 'TSRT_ART221'">
+				TSRT_ART221
+			</if>
+			<if test="T_TABLE == 'TSRT_ART222'">
+				TSRT_ART222
+			</if>
+			<if test="T_TABLE == 'TSRT_ART231'">
+				TSRT_ART231
+			</if>
+			<if test="T_TABLE == 'TSRT_ART311'">
+				TSRT_ART311
+			</if>
+			<if test="T_TABLE == 'TSRT_ART312'">
+				TSRT_ART312
+			</if>
+			<if test="T_TABLE == 'TSRT_ART313'">
+				TSRT_ART313
+			</if>			
+			<if test="T_TABLE == 'TSRT_ART321'">
+				TSRT_ART321
+			</if>
+			<if test="T_TABLE == 'TSRT_ART322'">
+				TSRT_ART322
+			</if>
+			<if test="T_TABLE == 'TSRT_ART323'">
+				TSRT_ART323
+			</if>
+		WHERE
+			SURVSEQ=#{SURVSEQ}			
+	</select>	
+
+	<select id="getTargetTable" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(*)  
+		FROM 
+			<if test="T_TABLE == '111'">
+				TSRT_AR111
+			</if>
+			<if test="T_TABLE == '112'">
+				TSRT_AR112
+			</if>
+			<if test="T_TABLE == '113'">
+				TSRT_AR113
+			</if>
+			<if test="T_TABLE == '114'">
+				TSRT_AR114
+			</if>
+			<if test="T_TABLE == '121'">
+				TSRT_AR121
+			</if>
+			<if test="T_TABLE == '122'">
+				TSRT_AR122
+			</if>
+			<if test="T_TABLE == '123'">
+				TSRT_AR123
+			</if>			
+			<if test="T_TABLE == '131'">
+				TSRT_AR131
+			</if>
+			<if test="T_TABLE == '132'">
+				TSRT_AR132
+			</if>
+			<if test="T_TABLE == '133'">
+				TSRT_AR133
+			</if>			
+			<if test="T_TABLE == '211'">
+				TSRT_AR211
+			</if>
+			<if test="T_TABLE == '212'">
+				TSRT_AR212
+			</if>
+			<if test="T_TABLE == '221'">
+				TSRT_AR221
+			</if>
+			<if test="T_TABLE == '222'">
+				TSRT_AR222
+			</if>
+			<if test="T_TABLE == '231'">
+				TSRT_AR231
+			</if>
+			<if test="T_TABLE == '232'">
+				TSRT_AR232
+			</if>
+			<if test="T_TABLE == '311'">
+				TSRT_AR311
+			</if>
+			<if test="T_TABLE == '312'">
+				TSRT_AR312
+			</if>
+			<if test="T_TABLE == '321'">
+				TSRT_AR321
+			</if>
+			<if test="T_TABLE == '322'">
+				TSRT_AR322
+			</if>
+			<if test="T_TABLE == '331'">
+				TSRT_AR331
+			</if>
+			<if test="T_TABLE == '332'">
+				TSRT_AR332
+			</if>
+			<if test="T_TABLE == '411'">
+				TSRT_AR411
+			</if>
+			<if test="T_TABLE == '412'">
+				TSRT_AR412
+			</if>
+			<if test="T_TABLE == '421'">
+				TSRT_AR421
+			</if>
+			<if test="T_TABLE == '422'">
+				TSRT_AR422
+			</if>
+			<if test="T_TABLE == '431'">
+				TSRT_AR431
+			</if>
+			<if test="T_TABLE == '432'">
+				TSRT_AR432
+			</if>
+			<if test="T_TABLE == '511'">
+				TSRT_AR511
+			</if>
+			<if test="T_TABLE == '512'">
+				TSRT_AR512
+			</if>
+			<if test="T_TABLE == '521'">
+				TSRT_AR521
+			</if>
+			<if test="T_TABLE == '522'">
+				TSRT_AR522
+			</if>
+			<if test="T_TABLE == '531'">
+				TSRT_AR531
+			</if>
+			<if test="T_TABLE == '532'">
+				TSRT_AR532
+			</if>
+			<if test="T_TABLE == '611'">
+				TSRT_AR611
+			</if>
+			<if test="T_TABLE == '612'">
+				TSRT_AR612
+			</if>
+			<if test="T_TABLE == '621'">
+				TSRT_AR621
+			</if>
+			<if test="T_TABLE == '622'">
+				TSRT_AR622
+			</if>
+			<if test="T_TABLE == '631'">
+				TSRT_AR631
+			</if>
+			<if test="T_TABLE == '632'">
+				TSRT_AR632
+			</if>
+			<if test="T_TABLE == '711'">
+				TSRT_AR711
+			</if>
+			<if test="T_TABLE == '712'">
+				TSRT_AR712
+			</if>
+			<if test="T_TABLE == '721'">
+				TSRT_AR721
+			</if>
+			<if test="T_TABLE == '722'">
+				TSRT_AR722
+			</if>
+			<if test="T_TABLE == '731'">
+				TSRT_AR731
+			</if>
+			<if test="T_TABLE == '732'">
+				TSRT_AR732
+			</if>
+			<if test="T_TABLE == '811'">
+				TSRT_AR811
+			</if>
+			<if test="T_TABLE == '812'">
+				TSRT_AR812
+			</if>
+			<if test="T_TABLE == '821'">
+				TSRT_AR821
+			</if>
+			<if test="T_TABLE == '822'">
+				TSRT_AR822
+			</if>
+			<if test="T_TABLE == '831'">
+				TSRT_AR831
+			</if>
+			<if test="T_TABLE == '832'">
+				TSRT_AR832
+			</if>
+			<if test="T_TABLE == 'A11'">
+				TSRT_ARA11
+			</if>
+			<if test="T_TABLE == 'A12'">
+				TSRT_ARA12
+			</if>
+			<if test="T_TABLE == 'A13'">
+				TSRT_ARA13
+			</if>
+			<if test="T_TABLE == 'B11'">
+				TSRT_ARB11
+			</if>
+			<if test="T_TABLE == 'B12'">
+				TSRT_ARB12
+			</if>
+			<if test="T_TABLE == 'B13'">
+				TSRT_ARB13
+			</if>
+			<if test="T_TABLE == 'B14'">
+				TSRT_ARB14
+			</if>
+			<if test="T_TABLE == 'B15'">
+				TSRT_ARB15
+			</if>
+			<if test="T_TABLE == 'B16'">
+				TSRT_ARB16
+			</if>					
+			<if test="T_TABLE == 'B21'">
+				TSRT_ARB21
+			</if>
+			<if test="T_TABLE == 'B22'">
+				TSRT_ARB22
+			</if>
+			<if test="T_TABLE == 'B30'">
+				TSRT_ARB30
+			</if>
+			<if test="T_TABLE == 'C11'">
+				TSRT_ARC11
+			</if>
+			<if test="T_TABLE == 'C12'">
+				TSRT_ARC12
+			</if>
+			<if test="T_TABLE == 'C13'">
+				TSRT_ARC13
+			</if>			
+			<if test="T_TABLE == 'C21'">
+				TSRT_ARC21
+			</if>
+			<if test="T_TABLE == 'C22'">
+				TSRT_ARC22
+			</if>
+			<if test="T_TABLE == 'C23'">
+				TSRT_ARC23
+			</if>
+		WHERE 
+	 		SURVSEQ = #{SURVSEQ} 
+	</select>	
+
+	<select id="getMemo" parameterType="java.util.Map" resultType="java.util.LinkedHashMap">
+		SELECT 
+			#{SURVSEQ}  SURVSEQ
+			, (SELECT MEMO FROM TMAD_MNGREPORT_MEMO WHERE SURVSEQ=#{SURVSEQ} ) MEMO
+			, (SELECT USERID FROM TMAD_MNGREPORT_MEMO WHERE SURVSEQ=#{SURVSEQ} ) USERID
+			, (SELECT MODIFY_DATETIME FROM TMAD_MNGREPORT_MEMO WHERE SURVSEQ=#{SURVSEQ} ) MODIFY_DATETIME
+		FROM 
+			DUAL 
+	</select>		
+	<insert id="insertMemo">
+		INSERT INTO TMAD_MNGREPORT_MEMO
+			(SURVSEQ,MEMO,USERID)
+		VALUES
+			(#{SURVSEQ},#{IN_MEMO},#{MODIFIERID})
+	</insert>	
+	<update id="updateMemo">
+		UPDATE TMAD_MNGREPORT_MEMO
+		SET MEMO=#{IN_MEMO}
+		WHERE SURVSEQ = #{SURVSEQ}	
+	</update>		
+	<update id="deleteMemo">
+		DELETE FROM TMAD_MNGREPORT_MEMO
+		WHERE SURVSEQ = #{SURVSEQ}	
+	</update>	
+	
+	<!-- 아이디 중복 체크 -->
+	<select id="checkOverlapMemo" parameterType="java.util.Map" resultType="int">
+			SELECT count(SURVSEQ)
+			  FROM TMAD_MNGREPORT_MEMO
+			 WHERE 
+			 SURVSEQ = #{SURVSEQ}
+	</select>		
+</mapper>	

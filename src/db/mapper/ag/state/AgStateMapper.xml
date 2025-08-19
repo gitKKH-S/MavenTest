@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AgStateMapper">
+	
+	<select id="listState" parameterType="java.util.Map" resultType="java.util.Map">
+        SELECT T3.SURVSEQ
+             , T3.SURVKINDCD
+             , T3.SCHCD
+             , T3.ORGCD
+             , T3.SCHNM
+             , T3.ORGNM
+             , SP_CODENAME_FU(T3.SURVSEQ, T3.SURVKINDCD,'0083', MAX(T3.STATUSCD)) AS STATUSNM
+             , T3.SURVSTRTDT
+             , T3.SURVENDDT
+             , MAX(T3.STATUSWKDTHM01) AS STATUSWKDTHM01
+             , MAX(T3.STATUSWKDTHM03) AS STATUSWKDTHM03
+             , MAX(T3.STATUSWKDTHM04) AS STATUSWKDTHM04
+             , MAX(T3.STATUSWKDTHM05) AS STATUSWKDTHM05
+             , MAX(T3.STATUSWKDTHM06) AS STATUSWKDTHM06
+          FROM (
+                SELECT T1.SURVSEQ
+                     , T1.SURVKINDCD
+                     , T1.SCHCD
+                     , T1.ORGCD
+                     , T2.MNTRSEQ
+                     , T1.SCHNM
+                     , T1.SURVPROSTATUSCD AS STATUSCD
+                     , T1.SURVSTRTDT
+                     , T1.SURVENDDT
+                     , SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'1001', T1.ORGCD) AS ORGNM
+                     , DECODE(T2.STATUSCD,'8', TO_CHAR(T2.STATUSWKDTHM,'YYYY.MM.DD')) AS STATUSWKDTHM01
+                     , DECODE(T2.STATUSCD,'11', TO_CHAR(T2.STATUSWKDTHM,'YYYY.MM.DD')) AS STATUSWKDTHM03
+                     , DECODE(T2.STATUSCD,'12', TO_CHAR(T2.STATUSWKDTHM,'YYYY.MM.DD')) AS STATUSWKDTHM04
+                     , DECODE(T2.STATUSCD,'15', TO_CHAR(T2.STATUSWKDTHM,'YYYY.MM.DD')) AS STATUSWKDTHM05
+                     , DECODE(T2.STATUSCD,'16', TO_CHAR(T2.STATUSWKDTHM,'YYYY.MM.DD')) AS STATUSWKDTHM06
+                  FROM TMAD_SCHOOL T1, TMAD_SURVMNTR T2
+                 WHERE 1=1
+                   AND T1.SURVSEQ = T2.SURVSEQ(+)
+                   AND T1.SURVKINDCD = T2.SURVKINDCD(+)
+                   AND T1.SCHCD = T2.SCHCD(+)          
+                   AND T1.ORGCD = T2.ORGCD(+)
+                   AND T1.SURVSEQ = #{SURVSEQ}
+                   AND T1.SURVKINDCD = 'AG'
+                   AND T1.SCHCD = #{SCHCD}       
+                   AND T1.ORGCD = #{ORGCD}
+             ) T3
+             GROUP BY T3.SURVSEQ,T3.SURVKINDCD,T3.SCHCD,T3.ORGCD,T3.SCHNM,T3.ORGNM,T3.SURVSTRTDT,T3.SURVENDDT
+	</select>	
+	
+	<select id="listDetailState" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT ROWNUM AS RN
+				,T1.SURVSEQ
+				,T1.SURVKINDCD
+				,T1.MNTRSEQ
+				,SP_CODENAME_FU(T1.SURVSEQ, T1.SURVKINDCD,'0083', T1.STATUSCD) AS STATUSNM
+				,TO_CHAR(T1.STATUSWKDTHM,'YYYY.MM.DD HH24:MI') AS STATUSWKDTHM
+				,T1.RCEPTCN
+				,SP_DEC_FU(T2.USERNM)  AS WORKERNM 
+			  FROM TMAD_SURVMNTR T1, TMAD_USER T2
+			 WHERE 
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				AND T2.USERID = T1.WORKERID
+			 ORDER BY T1.MNTRSEQ DESC
+	</select>	
+</mapper>

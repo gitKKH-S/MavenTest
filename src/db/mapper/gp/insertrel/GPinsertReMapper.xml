@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="GPinsertReMapper">
+	
+
+	<!--  결과조회 -->
+	<select id="selectGpRegResult" parameterType="java.util.Map" resultType="java.util.Map">
+	
+	  			SELECT 
+						A.SURVSEQ
+						,A.SURVKINDCD
+						,A.SCHCD
+						,( SELECT SCHNM  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = #{SURVSEQ} AND  SURVKINDCD = #{SURVKINDCD} AND ORGCD = A.ORGCD ) SCHNM
+						,A.ORGCD
+						,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1001', A.ORGCD) AS ORGNM
+						,A.COLCD
+						,A.COLNM 
+						,A.DEPTCD 
+						,A.DEPTNM 
+						,A.DNCD 
+						,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', A.DNCD) AS DNNM
+						,A.DETAILDEPTNM 
+						,A.DEGREECD 
+						,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0064', A.DEGREECD) AS DEGREECD_STR						
+						
+						,A.SUBDEPTCD 
+
+						,A.SUBDEPTNM 
+						,A.MULTIDEPTCD 
+						,A.MULTIDEPTNM 
+						,A.INYM 
+						,A.OUTYM 
+						,A.OUTGRACE 
+						,A.TRANSFERYM 
+						, CASE A.TRANSFERYM
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니요'
+							  ELSE ''  
+						  END TRANSFERYM_STR						
+						
+						,A.TRANSCLOSEYN 
+						, A.EXCHANGEYN EXCHANGEYN_YN
+						, CASE A.EXCHANGEYN
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니요'
+							  ELSE ''  
+						  END EXCHANGEYN
+						,A.STUDENTNO 
+						,A.UNIQUEKEY 
+						,SP_DEC_FU(A.NAME ) NAME
+						,A.NAME  NAME_NM
+						,A.JUMINNO 
+						,SP_DEC_FU( A.BIRTHYEAR ) BIRTHYEAR
+						, A.BIRTHYEAR BIRTHYEAR_NM
+						,A.AGE
+						,A.SEXCD   SEXCD_CD
+						, CASE A.SEXCD
+							  WHEN  '1'  THEN '남자'
+							  WHEN  '2'  THEN '여자'
+							  ELSE ''  
+						  END SEXCD	
+						,A.ADDR 
+						, SP_DEC_FU( A.ADDR  ) ADDR_STR
+						,A.ZIPCODE 
+						,A.MOBILENO 
+						, SP_DEC_FU( A.MOBILENO  ) MOBILENO_STR
+						,A.EMAILADDR 
+						, SP_DEC_FU( A.EMAILADDR  ) EMAILADDR_STR
+						,A.OUTHSCD
+						, SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'2008', A.OUTHSCD) AS OUTHSCD_STR 
+						 
+						,  A.OUTHSNM 
+						,A.OVERSEAYN 
+						, CASE A.OVERSEAYN
+							  WHEN  '1'  THEN '어학연수'
+							  WHEN  '2'  THEN '인턴십'
+							  WHEN  '3'  THEN '교환학생'
+							  WHEN  '4'  THEN '문화학술교류'
+							  WHEN  '5'  THEN '해당없음'
+							  ELSE ''  
+						  END OVERSEAYN_STR	
+						
+						
+						,A.TEACHCERTIYN 
+						, CASE A.TEACHCERTIYN
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니오'
+							  ELSE ''  
+						  END TEACHCERTIYN_STR	
+						
+						,A.INTERNSHIPYN 
+						, CASE A.INTERNSHIPYN
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니오'
+							  ELSE ''  
+						  END INTERNSHIPYN_STR							
+						
+						,A.DISABLEDYN
+						, CASE A.DISABLEDYN
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니오'
+							  ELSE ''  
+						  END DISABLEDYN_STR	
+
+						 
+						,A.GRADSCORE 
+						,A.TOEIC
+						,A.TRUSTYN 
+						,A.SPCLINYN 
+						,A.THESISNM 
+						,A.WORKERID
+						,A.WORKDTHM
+				  FROM TMGP_GRDPSNINFO A
+				 WHERE 
+				 	SURVSEQ = #{SURVSEQ}
+				 	AND SURVKINDCD = #{SURVKINDCD}
+				 	AND SCHCD = #{SCHCD}
+				 	AND ORGCD = #{ORGCD}
+					<if test='COLNM != null and COLNM != ""'>
+						AND COLCD IN (  SELECT  CD FROM TCCM_CODE  WHERE   SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND CDTYPE ='0504'  AND UPPER(CDNM) LIKE UPPER('%' || #{COLNM} || '%') )
+					</if>
+					<if test='DEPTNM != null and DEPTNM != ""'>
+						AND DEPTCD IN (  SELECT  DEPTCD FROM TMCM_DEPT  WHERE  SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND UPPER(DEPTNM) LIKE UPPER('%' || #{DEPTNM} || '%') )
+					</if>							
+					<if test='STUDENTNO != null and STUDENTNO != ""'>
+						AND  UPPER(STUDENTNO) LIKE UPPER('%' || #{STUDENTNO} || '%') 
+					</if>	
+					<if test='STUDENTNAME != null and STUDENTNAME != ""'>
+						AND  UPPER(NAME) LIKE UPPER('%' || SP_ENC_FU(#{STUDENTNAME}) || '%') 
+					</if>	
+					order by SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0504', A.COLCD), A.DEPTNM, A.DNCD, STUDENTNO 													 	
+
+	</select>	
+	
+	
+	
+	<!--   집계결과 가져오기 -->
+	<select id="selectGpTotalList" parameterType="java.util.Map" resultType="java.util.Map">
+	
+	  		   SELECT SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0504', A.COLCD) AS COLNM
+	  				, ( SELECT  DEPTNM FROM TMCM_DEPT  WHERE   SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND DEPTCD =  A.DEPTCD  ) DEPTNM
+	  				, SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', A.DNCD) AS DNNM   
+	  				, SUM(1) FPCNT
+                    , SUM(CASE WHEN SEXCD ='1' THEN 1 ELSE 0 END) FPCNT_M
+                    , SUM(CASE WHEN SEXCD ='2' THEN 1 ELSE 0 END) FPCNT_W
+                    , SUM(CASE WHEN EXCHANGEYN ='1' THEN 1 ELSE 0 END) FPCNT_FOR
+                    , SUM(CASE WHEN EXCHANGEYN ='1' AND SEXCD ='1' THEN 1 ELSE 0 END) FPCNT_FOR_M
+                    , SUM(CASE WHEN EXCHANGEYN ='1' AND SEXCD ='2' THEN 1 ELSE 0 END) FPCNT_FOR_W
+                    , SUM(CASE WHEN TEACHCERTIYN ='1' THEN 1 ELSE 0 END) FPCNT_TEC
+                    , SUM(CASE WHEN TEACHCERTIYN ='1' AND SEXCD ='1' THEN 1 ELSE 0 END) FPCNT_TEC_M
+                    , SUM(CASE WHEN TEACHCERTIYN ='1' AND SEXCD ='2' THEN 1 ELSE 0 END) FPCNT_TEC_W
+                    , SUM(CASE WHEN SPCLINYN ='1' THEN 1 ELSE 0 END) FPCNT_LIC
+                    , SUM(CASE WHEN SPCLINYN ='1' AND SEXCD ='1' THEN 1 ELSE 0 END) FPCNT_LIC_M
+                    , SUM(CASE WHEN SPCLINYN ='1' AND SEXCD ='2' THEN 1 ELSE 0 END) FPCNT_LIC_W
+                    , SUM(CASE WHEN TRUSTYN ='1' THEN 1 ELSE 0 END) FPCNT_TRU
+                    , SUM(CASE WHEN TRUSTYN ='1' AND SEXCD ='1' THEN 1 ELSE 0 END) FPCNT_TRU_M
+                    , SUM(CASE WHEN TRUSTYN ='1' AND SEXCD ='2' THEN 1 ELSE 0 END) FPCNT_TRU_W 
+                    , SUM(CASE WHEN OVERSEAYN IN ('1','2','3','4') THEN 1 ELSE 0 END) FPCNT_OVE
+                    , SUM(CASE WHEN OVERSEAYN IN ('1','2','3','4') AND SEXCD ='1' THEN 1 ELSE 0 END) FPCNT_OVE_M
+                    , SUM(CASE WHEN OVERSEAYN IN ('1','2','3','4') AND SEXCD ='2' THEN 1 ELSE 0 END) FPCNT_OVE_W
+                    , SUM(CASE WHEN TRANSFERYM ='1' THEN 1 ELSE 0 END) FPCNT_TRA
+                    , SUM(CASE WHEN TRANSFERYM ='1' AND SEXCD ='1' THEN 1 ELSE 0 END) FPCNT_TRA_M
+                    , SUM(CASE WHEN TRANSFERYM ='1' AND SEXCD ='2' THEN 1 ELSE 0 END) FPCNT_TRA_W
+				FROM TRGP_GRDPSNINFO A
+				 WHERE 
+				 	SURVSEQ = #{SURVSEQ}
+				 	AND SURVKINDCD = #{SURVKINDCD}
+				 	AND SCHCD = #{SCHCD}
+				 	AND ORGCD = #{ORGCD}
+				 	
+				<if test='sel_dept != null and sel_dept != ""'>
+					AND DEPTCD IN (  SELECT  DEPTCD FROM TMCM_DEPT  WHERE   SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND UPPER(DEPTNM) LIKE UPPER('%' || #{sel_dept} || '%') )
+				</if>	
+							 	
+				 GROUP BY COLCD, DEPTCD ,DNCD
+				 ORDER BY SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0504', A.COLCD), DEPTNM ,DNCD
+
+	</select>		
+		
+	<!--  결과조회 -->
+	<select id="selectGpReginfo" parameterType="java.util.Map" resultType="java.util.Map">
+	  			SELECT 
+						A.SURVSEQ
+						,A.SURVKINDCD
+						,A.SCHCD
+						,( SELECT SCHNM  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND  SURVSEQ = #{SURVSEQ} AND  SURVKINDCD = #{SURVKINDCD} AND ORGCD = A.ORGCD ) SCHNM
+						,A.ORGCD
+						,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1001', A.ORGCD) AS ORGNM
+						,A.STUDENTSEQ
+						,A.COLCD
+						,A.COLNM 
+						,A.DEPTCD 
+						,A.DEPTNM 
+						,A.DNCD 
+						,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', A.DNCD) AS DNNM
+						,A.DETAILDEPTNM 
+						,A.DEGREECD 
+						,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0064', A.DEGREECD) AS DEGREECD_STR						
+						
+						,A.SUBDEPTCD 
+						,(select deptnm from tmcm_dept where survseq=#{SURVSEQ} and survkindcd=#{SURVKINDCD} and deptcd=A.SUBDEPTCD ) SUBDEPTNM 
+						,A.MULTIDEPTCD 
+						,(select deptnm from tmcm_dept where survseq=#{SURVSEQ} and survkindcd=#{SURVKINDCD} and deptcd=A.MULTIDEPTCD ) MULTIDEPTNM 
+						,A.INYM 
+						,A.OUTYM
+						,A.OUTGRACE 
+						,A.TRANSFERYM 
+						, CASE A.TRANSFERYM
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니요'
+							  ELSE ''  
+						  END TRANSFERYM_STR						
+						
+						,A.TRANSCLOSEYN 
+						, A.EXCHANGEYN EXCHANGEYN_YN
+						, CASE A.EXCHANGEYN
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니요'
+							  ELSE ''  
+						  END EXCHANGEYN
+						,A.STUDENTNO 
+						,A.UNIQUEKEY 
+						,SP_DEC_FU(A.NAME ) NAME
+						,A.NAME  NAME_NM
+						,A.JUMINNO 
+						,SP_DEC_FU( A.BIRTHYEAR ) BIRTHYEAR
+						, A.BIRTHYEAR BIRTHYEAR_NM
+						,A.AGE
+						,A.SEXCD   SEXCD_CD
+						, CASE A.SEXCD
+							  WHEN  '1'  THEN '남자'
+							  WHEN  '2'  THEN '여자'
+							  ELSE ''  
+						  END SEXCD	
+						,A.ADDR 
+						, SP_DEC_FU( A.ADDR  ) ADDR_STR
+						,A.ZIPCODE 
+						,A.MOBILENO 
+						, SP_DEC_FU( A.MOBILENO  ) MOBILENO_STR
+						,A.EMAILADDR 
+						, SP_DEC_FU( A.EMAILADDR  ) EMAILADDR_STR
+						,A.OUTHSCD
+						, SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'2008', A.OUTHSCD) AS OUTHSCD_STR 
+						 
+						,  A.OUTHSNM 
+						,A.OVERSEAYN 
+						, CASE A.OVERSEAYN
+							  WHEN  '1'  THEN '어학연수'
+							  WHEN  '2'  THEN '인턴십'
+							  WHEN  '3'  THEN '교환학생'
+							  WHEN  '4'  THEN '문화학술교류'
+							  WHEN  '5'  THEN '해당없음'
+							  ELSE ''  
+						  END OVERSEAYN_STR	
+						
+						
+						,A.TEACHCERTIYN 
+						, CASE A.TEACHCERTIYN
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니오'
+							  ELSE ''  
+						  END TEACHCERTIYN_STR	
+						
+						,A.INTERNSHIPYN 
+						, CASE A.INTERNSHIPYN
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니오'
+							  ELSE ''  
+						  END INTERNSHIPYN_STR							
+						
+						,A.DISABLEDYN
+						, CASE A.DISABLEDYN
+							  WHEN  '1'  THEN '예'
+							  WHEN  '2'  THEN '아니오'
+							  ELSE ''  
+						  END DISABLEDYN_STR	
+
+						 
+						,A.GRADSCORE 
+						,A.TOEIC
+						,A.TRUSTYN 
+						,A.SPCLINYN 
+						,A.THESISNM 
+						,A.WORKERID
+						,A.WORKDTHM
+				  FROM 
+				  	TRGP_GRDPSNINFO A
+				 WHERE 
+				 	A.SURVSEQ = #{SURVSEQ}
+				 	AND A.SURVKINDCD = #{SURVKINDCD}
+				 	AND A.SCHCD = #{SCHCD}
+				 	AND A.ORGCD = #{ORGCD}
+					<if test='COLNM != null and COLNM != ""'>
+						AND A.COLCD IN (  SELECT  CD FROM TCCM_CODE  WHERE   SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND CDTYPE ='0504'  AND UPPER(CDNM) LIKE UPPER('%' || #{COLNM} || '%') )
+					</if>
+					<if test='DEPTNM != null and DEPTNM != ""'>
+						AND A.DEPTCD IN (  SELECT  DEPTCD FROM TMCM_DEPT  WHERE  SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND UPPER(DEPTNM) LIKE UPPER('%' || #{DEPTNM} || '%') )
+					</if>							
+					<if test='STUDENTNO != null and STUDENTNO != ""'>
+						AND  UPPER(A.STUDENTNO) LIKE UPPER('%' || #{STUDENTNO} || '%') 
+					</if>	
+					<if test='STUDENTNAME != null and STUDENTNAME != ""'>
+						AND  UPPER(A.NAME) LIKE UPPER('%' || SP_ENC_FU(#{STUDENTNAME}) || '%') 
+					</if>
+					order by SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0504', A.COLCD), A.DEPTNM, A.DNCD, A.STUDENTSEQ
+	</select>	
+	
+	
+	
+	
+</mapper>	
+		
+	
+	
+	
+	
+	
+	
+	

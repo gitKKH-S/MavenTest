@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SwissSymUsrDQM01">
+	
+	<select id="selectUserSearch" parameterType="java.util.Map" resultType="java.util.Map">
+            SELECT USER_ID, USER_NM, USER_GB, SOSOK, DEUNGROK_DT, USE_GIGAN_FR, USE_GIGAN_TO, TEL, HP, USE_GN_YN
+              FROM SGSYUSER00TT
+             WHERE NVL(USER_GB,' ')      LIKE #{USER_GB}||'%'
+               AND NVL(USE_GIGAN_FR,' ') LIKE #{USE_GIGAN_FR}||'%'
+               AND NVL(USE_GIGAN_TO,' ') LIKE #{USE_GIGAN_TO}||'%'
+               AND NVL(SOSOK,' ')        LIKE #{SOSOK}||'%'
+               AND NVL(USER_NM,' ')      LIKE #{USER_NM}||'%'
+             ORDER BY DEUNGROK_DT
+	</select>
+
+	<insert id="saveUser" parameterType="java.util.Map">
+			MERGE INTO SGSYUSER00TT
+			USING DUAL
+			   ON (USER_ID = #{USER_ID})
+			 WHEN MATCHED THEN
+			      UPDATE SET USER_NM      = #{USER_NM}
+                           , USER_GB      = #{USER_GB}
+                           , SOSOK        = #{SOSOK}
+                           , USE_GIGAN_FR = #{USE_GIGAN_FR}
+                           , USE_GIGAN_TO = #{USE_GIGAN_TO}
+                           , TEL          = replace(#{TEL},' ','')
+                           , HP           = replace(#{HP},' ','')
+                           , USE_GN_YN    = #{USE_GN_YN}
+                           , UPDATE_DT    = sysdate
+             WHEN NOT MATCHED THEN
+        	      INSERT (USER_ID, USER_NM, USER_GB, SOSOK, DEUNGROK_DT, USE_GIGAN_FR, USE_GIGAN_TO, TEL, HP, USE_GN_YN, UPDATE_MAN, UPDATE_DT)
+        	      VALUES (#{USER_ID}, #{USER_NM}, #{USER_GB}, #{SOSOK}, sysdate, #{USE_GIGAN_FR}, #{USE_GIGAN_TO}, replace(#{TEL},' ',''), replace(#{HP},' ',''), #{USE_GN_YN}, 'system', sysdate)
+    </insert>
+
+    <delete id="deleteUser" parameterType="java.util.Map">
+        	DELETE FROM SGSYUSER00TT
+        	 WHERE USER_ID = #{USER_ID}
+    </delete>	
+    
+</mapper>

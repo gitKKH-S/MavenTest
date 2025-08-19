@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SwissCmmDQM">
+	
+	<select id="selectSystemId" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT SYSTEM_ID AS CODE_ID, MENU_NM AS CODE_NM
+			  FROM SGGHPGMN00TT
+			 WHERE MENU_LEVEL = 0
+			 ORDER BY MENU_SEQ, MENU_ID
+	</select>
+	
+	<select id="selectCommonCodeList" parameterType="java.util.Map" resultType="java.util.Map">
+		<if test="SEL_GB.equals('SEL')">
+			SELECT '1' AS GB, '' AS GRP_GB, '' AS CODE_ID, '선택' AS CODE_NM,'' AS USER1, '' AS USER2, '' AS USER3, '' AS USER4, '' AS USER5, '' AS CODE_BIGO, 0 AS PRINT_SEQ, 'Y' AS USE_YN
+			  FROM DUAL
+			 UNION
+		</if>
+		<if test="SEL_GB.equals('ALL')">
+			SELECT '1' AS GB, '' AS GRP_GB, '' AS CODE_ID, '전체' AS CODE_NM, '' AS USER1, '' AS USER2, '' AS USER3, '' AS USER4, '' AS USER5, '' AS CODE_BIGO, 0 AS PRINT_SEQ, 'Y' AS USE_YN
+			  FROM DUAL
+			UNION
+		</if>
+			            
+			SELECT '2' AS GB, GRP_GB, CODE_ID, CODE_NM, USER1, USER2, USER3, USER4, USER5, CODE_BIGO, PRINT_SEQ, USE_YN
+			  FROM SGCOCDMA00TT
+			 WHERE 1=1
+			   AND GRP_GB = #{GRP_GB}
+		<if test="USER1 != null">
+			   AND USER1 = #{USER1}
+		</if>
+		<if test="USER2 != null">
+			   AND USER2 = #{USER2}
+		</if>
+		<if test="USER3 != null">
+			   AND USER3 = #{USER3}
+		</if>
+		<if test="USER4 != null">
+			   AND USER4 = #{USER4}
+		</if>
+		<if test="USER5 != null">
+			   AND USER5 = #{USER5}
+		</if>
+	</select>
+	
+	<select id="selectCalendar" parameterType="java.util.Map" resultType="java.util.Map">
+	<![CDATA[
+		SELECT MIN (DECODE (TO_CHAR (YM + LEVEL - 1, 'D'), '1', LEVEL)) SUN 
+		     , MIN (DECODE (TO_CHAR (YM + LEVEL - 1, 'D'), '2', LEVEL)) MON 
+		     , MIN (DECODE (TO_CHAR (YM + LEVEL - 1, 'D'), '3', LEVEL)) TUE 
+		     , MIN (DECODE (TO_CHAR (YM + LEVEL - 1, 'D'), '4', LEVEL)) WED 
+		     , MIN (DECODE (TO_CHAR (YM + LEVEL - 1, 'D'), '5', LEVEL)) THU 
+		     , MIN (DECODE (TO_CHAR (YM + LEVEL - 1, 'D'), '6', LEVEL)) FRI 
+		     , MIN (DECODE (TO_CHAR (YM + LEVEL - 1, 'D'), '7', LEVEL)) SAT 
+		  FROM (SELECT TO_DATE(TO_CHAR(SYSDATE,'YYYYMM'),'YYYYMM') YM FROM DUAL) 
+		CONNECT BY LEVEL <= LAST_DAY (YM) - YM + 1 
+		 GROUP BY TRUNC (YM + LEVEL, 'IW') 
+		 ORDER BY SAT
+	]]>
+	</select>
+	
+	<select id="setLoginInfo" parameterType="java.util.Map" resultType="java.util.Map">
+         SELECT CASE WHEN count(*) > 0 THEN 'Y' ELSE 'N' END AS LOGIN_YN
+           FROM SGSYUSER00TT 
+          WHERE USER_ID = #{Id}
+	</select>
+</mapper>

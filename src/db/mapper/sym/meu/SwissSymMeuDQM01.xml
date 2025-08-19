@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SwissSymMeuDQM01">
+	
+	<select id="selectMasterMenu" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT SYSTEM_ID, MENU_ID, PAGE_ID, MENU_NM, MENU_LEVEL, MENU_SEQ, UP_MENU_ID, USE_YN
+			  FROM SGGHPGMN00TT A
+			 WHERE MENU_LEVEL = 0
+		<if test="USER_GB != ''">
+			   AND EXISTS (
+			               SELECT 1 
+			                 FROM SGGHUGRD00TT X
+			                WHERE X.SYSTEM_ID = A.SYSTEM_ID
+			                 AND X.MENU_ID = A.MENU_ID
+			                 AND X.USER_GRP_ID = #{USER_GB}
+			              )
+		</if>
+			 ORDER BY MENU_SEQ
+	</select>
+	
+	<select id="selectLeftMenu" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT A.SYSTEM_ID,
+			       A.MENU_ID,
+			       A.PAGE_ID,
+			       A.MENU_NM,
+			       A.MENU_LEVEL,
+			       A.MENU_SEQ,
+			       A.UP_MENU_ID,
+			       A.USE_YN,
+			       B.PAGE_NM,			       
+			       REPLACE(SUBSTR(INITCAP(B.PAGE_PATH),0,INSTR(B.PAGE_PATH,'/',1,2)+1)||SUBSTR(B.PAGE_PATH,INSTR(B.PAGE_PATH,'/',1,2)+2,LENGTH(B.PAGE_PATH)),'jsp','xfdl') AS PAGE_PATH
+			  FROM SGGHPGMN00TT A, SGGHPAGE00TT B
+			 WHERE 1=1
+			   AND A.SYSTEM_ID = B.SYSTEM_ID(+)
+			   AND A.PAGE_ID = B.PAGE_ID(+)
+			   AND A.MENU_LEVEL != 0
+		<if test="USER_GB != ''">
+			   AND EXISTS (
+			               SELECT 1 
+			                 FROM SGGHUGRD00TT X
+			                WHERE X.SYSTEM_ID = A.SYSTEM_ID
+			                 AND X.MENU_ID = A.MENU_ID
+			                 AND X.USER_GRP_ID = #{USER_GB}
+			              )
+		</if>
+		     START WITH A.UP_MENU_ID IS NULL
+		     CONNECT BY PRIOR A.MENU_ID = A.UP_MENU_ID
+		     ORDER SIBLINGS BY  MENU_SEQ
+	</select>
+	
+	<select id="selectPage" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT SYSTEM_ID,
+			       PAGE_ID,
+			       PAGE_NM,
+			       PAGE_DESC,
+			       PAGE_PATH,
+			       USE_YN,
+			       UPDATE_MAN,
+			       UPDATE_DT
+			  FROM SGGHPAGE00TT
+			 WHERE 1=1
+			   AND SYSTEM_ID LIKE #{SYSTEM_ID}||'%'
+			   
+			   <if test="PAGE_NM != ''">
+			   AND PAGE_NM LIKE '%'||#{PAGE_NM}||'%'
+			   </if>
+			   
+			 ORDER BY SYSTEM_ID, PAGE_ID		
+	</select>
+	
+	<insert id="insertPage" parameterType="java.util.Map">
+    		INSERT INTO SGGHPAGE00TT(SYSTEM_ID, PAGE_ID, PAGE_NM, PAGE_DESC, PAGE_PATH, USE_YN, UPDATE_MAN, UPDATE_DT)
+    		VALUES(#{SYSTEM_ID}, #{PAGE_ID}, #{PAGE_NM}, #{PAGE_DESC}, #{PAGE_PATH}, #{USE_YN}, #{UPDATE_MAN}, SYSDATE)
+    </insert>
+	
+    <update id="updatePage" parameterType="java.util.Map">
+        	UPDATE SGGHPAGE00TT SET
+        		SYSTEM_ID = #{SYSTEM_ID},
+        		PAGE_ID = #{PAGE_ID},
+        		PAGE_NM = #{PAGE_NM},
+        		PAGE_DESC = #{PAGE_DESC},
+        		PAGE_PATH = #{PAGE_PATH},
+        		USE_YN = #{USE_YN},
+        		UPDATE_MAN = #{UPDATE_MAN},
+        		UPDATE_DT = SYSDATE
+        	WHERE SYSTEM_ID = #{SYSTEM_ID}
+        	  AND PAGE_ID = #{PAGE_ID}
+    </update>
+
+    <delete id="deletePage" parameterType="java.util.Map">
+    		DELETE
+    		  FROM SGGHPAGE00TT
+    		 WHERE SYSTEM_ID = #{SYSTEM_ID}
+        	   AND PAGE_ID = #{PAGE_ID}
+    </delete>
+    
+    <select id="selectAllMenu" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT SYSTEM_ID, MENU_ID, PAGE_ID, MENU_NM, MENU_LEVEL, MENU_SEQ, UP_MENU_ID, USE_YN, UPDATE_MAN, UPDATE_DT, SYSTEM_ID||MENU_ID AS KEY
+			  FROM SGGHPGMN00TT
+			 WHERE 1=1
+			 START WITH UP_MENU_ID IS NULL
+			 CONNECT BY PRIOR MENU_ID = UP_MENU_ID
+			 ORDER SIBLINGS BY MENU_SEQ
+	</select>
+	
+	<select id="selectSubMenu" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT A.SYSTEM_ID,
+			       A.MENU_LEVEL,
+			       A.MENU_ID,
+			       A.MENU_NM,
+			       NVL(A.PAGE_ID,'') AS PAGE_ID,
+			       NVL(B.PAGE_NM,'') AS PAGE_NM,
+			       A.MENU_SEQ,
+			       A.UP_MENU_ID,
+			       A.USE_YN,
+			       A.UPDATE_MAN,
+			       A.UPDATE_DT
+			  FROM SGGHPGMN00TT A, SGGHPAGE00TT B
+			 WHERE 1=1
+			   AND A.PAGE_ID = B.PAGE_ID(+)
+			   AND A.SYSTEM_ID = B.SYSTEM_ID(+)
+			   <if test="MENU_LEVEL != '-1'">
+			   AND A.SYSTEM_ID = #{SYSTEM_ID}
+			   </if>
+			   AND (A.UP_MENU_ID = #{MENU_ID} OR A.MENU_ID = #{MENU_ID})
+			 ORDER BY A.MENU_LEVEL, A.MENU_SEQ, A.MENU_ID
+	</select>
+	
+	<select id="selectSubMenuCnt" parameterType="java.util.Map" resultType="java.util.Map">
+		<![CDATA[
+			SELECT COUNT(MENU_ID) AS subcnt
+			  FROM SGGHPGMN00TT
+			 WHERE SYSTEM_ID = #{SYSTEM_ID}
+			   AND MENU_ID <> #{MENU_ID}
+			   AND UP_MENU_ID = #{MENU_ID}
+		]]>
+	</select>
+	
+	<insert id="insertMenu" parameterType="java.util.Map">
+			INSERT INTO SGGHPGMN00TT(SYSTEM_ID, MENU_ID, PAGE_ID, MENU_NM, MENU_LEVEL, MENU_SEQ, UP_MENU_ID, USE_YN, UPDATE_MAN, UPDATE_DT)
+			VALUES(#{SYSTEM_ID}, #{MENU_ID}, #{PAGE_ID}, #{MENU_NM}, #{MENU_LEVEL}, #{MENU_SEQ}, #{UP_MENU_ID}, #{USE_YN}, #{UPDATE_MAN}, SYSDATE)	
+    </insert>
+	
+    <update id="updateMenu" parameterType="java.util.Map">
+			UPDATE SGGHPGMN00TT SET
+				SYSTEM_ID = #{SYSTEM_ID},
+				MENU_ID = #{MENU_ID},
+				PAGE_ID = #{PAGE_ID},
+				MENU_NM = #{MENU_NM},
+				MENU_LEVEL = #{MENU_LEVEL},
+				MENU_SEQ = #{MENU_SEQ},
+				UP_MENU_ID = #{UP_MENU_ID},
+				USE_YN = #{USE_YN},
+				UPDATE_MAN = #{UPDATE_MAN},
+				UPDATE_DT = SYSDATE
+			WHERE SYSTEM_ID = #{SYSTEM_ID}
+			  AND MENU_ID = #{MENU_ID}
+    </update>
+
+    <delete id="deleteMenu" parameterType="java.util.Map">
+    		DELETE
+    		  FROM SGGHPGMN00TT
+    		 WHERE SYSTEM_ID = #{SYSTEM_ID}
+        	   AND MENU_ID = #{MENU_ID}
+    </delete>	
+
+</mapper>

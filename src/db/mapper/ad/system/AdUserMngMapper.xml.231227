@@ -1,0 +1,715 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdUserMngMapper">
+	
+	<select id="selectKediUserList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT ROWNUM AS RN
+				,SURVSEQ
+				,SURVKINDCD
+				,USERID
+				,USERID
+				,USERGRPTYPE
+		       ,CASE USERGRPTYPE
+		         WHEN '2' THEN 'KEDI 관리자'
+		         WHEN '7' THEN '진로탐색 사용자'
+		         WHEN '8' THEN '콜센타사용자'
+		         ELSE ''
+		       	END as USERGRPTYPENM				
+				
+				,SP_DEC_FU(USERNM) USERNM
+				,DEPTNM
+				,TELNO
+				,SP_DEC_FU(MOBILENO) MOBILENO
+				,FAXNO
+				,SP_DEC_FU(EMAILADDR) EMAILADDR
+			  FROM TMAD_USER
+			 WHERE 
+			 	WORKYN = '1'
+			  AND
+			 ( USERGRPTYPE = '2'  or USERGRPTYPE = '8'  or USERGRPTYPE = '7'   )
+			 ORDER BY WORKDTHM DESC
+	</select>
+	
+	<select id="selectSchoolTmpUserList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT ROWNUM AS RN
+				,SURVSEQ
+				,SURVKINDCD
+				,SCHCD
+				,ORGCD
+				,USERID
+				,USERID
+				,USERGRPTYPE
+		       ,CASE USERGRPTYPE
+		         WHEN '9' THEN '임시사용자'
+		         ELSE ''
+		       	END as USERGRPTYPENM				
+				
+				,SP_DEC_FU(USERNM) USERNM
+				,DEPTNM
+				,TELNO
+				,SP_DEC_FU(MOBILENO) MOBILENO
+				,FAXNO
+				,SP_DEC_FU(EMAILADDR) EMAILADDR
+			  FROM TMAD_USER
+			 WHERE 
+			 	WORKYN = '1'
+			    AND USERGRPTYPE = '9'
+			    AND SCHCD = #{SCHCD}
+			    AND ORGCD = #{ORGCD}
+			 ORDER BY WORKDTHM DESC
+	</select>	
+
+	<select id="selectMenuConList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+				CON.PAGEID
+				,MN.PAGENM
+				,TO_CHAR(CON.START_DATETIME,'YYYY-MM-DD HH24:MI:SS') START_DATETIME
+				,TO_CHAR(CON.END_DATETIME,'YYYY-MM-DD HH24:MI:SS') END_DATETIME
+			 FROM 
+			 	TMAD_MENU_CON CON
+			 	LEFT OUTER JOIN TMAD_MENU MN ON MN.PAGEID=CON.PAGEID
+			 ORDER BY CON.PAGEID ASC
+	</select>	
+	<select id="selectReportConList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+				SURVSEQ
+				,AREA PAGEID
+				,REPORT REPORTNO
+			 FROM 
+			 	TMAD_REPORT_CON
+			 WHERE
+			 	SURVSEQ = #{SURVSEQ}
+			 ORDER BY PAGEID ASC
+	</select>		
+	
+	<select id="selectSchoolUserList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT ROWNUM AS RN
+				,SURVSEQ
+				,SURVKINDCD
+				,USERID
+				,USERID
+				,USERGRPTYPE
+		       ,CASE USERGRPTYPE
+		         WHEN '4' THEN '취업담당자'
+		         ELSE ''
+		       	END as USERGRPTYPENM				
+				
+				,SP_DEC_FU(USERNM) USERNM
+				,DEPTNM
+				,TELNO
+				,SP_DEC_FU(MOBILENO) MOBILENO
+				,FAXNO
+				,SP_DEC_FU(EMAILADDR) EMAILADDR
+			  FROM TMAD_USER
+			 WHERE 
+			 	WORKYN = '1'
+			    AND USERGRPTYPE = '4'
+			 ORDER BY WORKDTHM DESC
+	</select>		
+
+	<select id="selectSchoolInfList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+				*
+			  FROM TMAD_SCHOOL
+			 WHERE
+				SURVSEQ=#{SURVSEQ} 
+				AND SURVKINDCD=#{SURVKINDCD}
+
+	</select>	
+	
+	<!-- 캐디 관리자  -->
+	<insert id="insertKediUser" parameterType="java.util.Map">
+
+			INSERT INTO TMAD_USER( 
+					USERID
+					,USERGRPTYPE
+					,USERNM
+					,PASSWD
+					,DEPTNM
+					,TELNO
+					,MOBILENO
+					,FAXNO
+					,EMAILADDR
+					,SMSYN
+					,WORKYN
+					,ORIPASSWDYN
+					,WORKDTHM
+					,SCHCD
+					,ORGCD
+				)
+			VALUES(
+				 #{USERID}
+				, #{USERGRPTYPE}
+				, SP_ENC_FU(#{USERNM})
+				, SP_PWENC_FU( DBMS_RANDOM.STRING('A',6)  )
+				, #{DEPTNM}
+				, #{TELNO} 
+				, SP_ENC_FU(#{MOBILENO})
+				, #{FAXNO}
+				, SP_ENC_FU(#{USERID})
+				, '1'
+				, '1'
+				, '1'
+				, SYSDATE
+				, #{SCHCD}
+				, #{ORGCD}
+			)	
+    </insert>
+    
+	<!-- 캐디 관리자  -->
+	<insert id="insertSchoolInf" parameterType="java.util.Map">
+
+			INSERT INTO TMAD_SCHOOL( 
+					SURVSEQ
+					,SURVKINDCD
+					,SCHCD
+					,ORGCD
+					,SCHNM
+					,SCHCHINM
+					,SCHENGNM
+					,SCHKINDCD
+					,SCHFUNDCD
+					,SCHSEXCD
+					,SCHDNCD
+					,SCHSTATCD
+					,PROVINCECD
+				)
+			VALUES(
+				 #{SURVSEQ}
+				, #{SURVKINDCD}
+				, #{SCHCD}
+				, #{ORGCD}
+				, #{SCHNM}
+				, #{SCHCHINM}
+				, #{SCHENGNM}
+				,0
+				,0
+				,0
+				,0
+				,0
+				,0
+			)	
+    </insert>   
+    
+   	<!-- 캐디 관리자  -->
+	<insert id="insertMenuCon" parameterType="java.util.Map">
+			INSERT INTO TMAD_MENU_CON( 
+					PAGEID
+					,START_DATETIME
+					,END_DATETIME
+				)
+			VALUES(
+				 #{PAGEID}
+				, TO_DATE(#{START_DATETIME},'YYYY-MM-DD HH24:MI:SS')
+				, TO_DATE(#{END_DATETIME},'YYYY-MM-DD HH24:MI:SS')
+			)	
+    </insert>
+
+   	<!-- 캐디 관리자  -->
+	<insert id="insertReportCon" parameterType="java.util.Map">
+			INSERT INTO TMAD_REPORT_CON( 
+					SURVSEQ
+					,AREA
+					,REPORT
+				)
+			VALUES(
+				 #{SURVSEQ}
+				, #{PAGEID}
+				, #{REPORTNO}
+			)	
+    </insert>
+	
+    <update id="updateKediUser" parameterType="java.util.Map">
+			UPDATE TMAD_USER SET
+
+				USERNM = SP_ENC_FU(#{USERNM})
+				,DEPTNM = #{DEPTNM}
+				,TELNO = #{TELNO}
+				,MOBILENO = SP_ENC_FU(#{MOBILENO})
+				,FAXNO = #{FAXNO}
+				,EMAILADDR = SP_ENC_FU(#{EMAILADDR})
+				,SMSYN = '1'
+				,WORKYN = '1'
+				,ORIPASSWDYN = '1'
+
+			WHERE USERID = #{USERID}
+
+    </update>
+    
+    <update id="updateSchoolInf" parameterType="java.util.Map">
+			UPDATE TMAD_SCHOOL SET
+				SCHNM = #{SCHNM}
+				,SCHCHINM = #{SCHCHINM}
+				,SCHENGNM = #{SCHENGNM}
+				,SCHKINDCD = #{SCHKINDCD}
+				,SCHFUNDCD = #{SCHFUNDCD}
+				,SCHSEXCD = #{SCHSEXCD}
+				,SCHDNCD = #{SCHDNCD}
+				,SCHSTATCD = #{SCHSTATCD}
+				,PROVINCECD = #{PROVINCECD}
+				,ZIPCODE = #{ZIPCODE}
+				,SCHADDR = #{SCHADDR}
+			WHERE
+				SURVSEQ=#{SURVSEQ} 
+				AND SURVKINDCD=#{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+
+    </update>    
+    
+    <update id="updateMenuCon" parameterType="java.util.Map">
+		UPDATE
+		    TMAD_MENU_CON
+		SET
+		    START_DATETIME = TO_DATE(#{START_DATETIME},'YYYY-MM-DD HH24:MI:SS')
+		    , END_DATETIME = TO_DATE(#{END_DATETIME},'YYYY-MM-DD HH24:MI:SS')
+		WHERE
+		    PAGEID = #{PAGEID}
+    </update>    
+
+    <update id="updateReportCon" parameterType="java.util.Map">
+		UPDATE
+		    TMAD_REPORT_CON
+		SET
+			SURVSEQ = #{SURVSEQ}
+		    AND AREA = #{PAGEID}
+		    AND REPORT = #{REPORTNO}
+		WHERE
+			SURVSEQ = #{SURVSEQ}
+		    AND AREA = #{PAGEID}
+		    AND REPORT = #{REPORTNO}
+    </update>    
+	
+    <delete id="deleteKediUser" parameterType="java.util.Map">
+    		UPDATE
+    		   TMAD_USER
+    		   SET WORKYN = '2' , EPKIKEY = ''
+    		 WHERE USERID = #{USERID}
+    </delete>	
+    
+    <delete id="deleteSchoolInf" parameterType="java.util.Map">
+    		DELETE FROM 
+    		   TMAD_SCHOOL
+    		 WHERE
+				SURVSEQ=#{SURVSEQ} 
+				AND SURVKINDCD=#{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+    </delete>	 
+    
+	<delete id="deleteMenuCon" parameterType="java.util.Map">
+		DELETE FROM
+		    TMAD_MENU_CON
+		WHERE
+		    PAGEID = #{PAGEID}
+    </delete>	
+    
+	<delete id="deleteReportCon" parameterType="java.util.Map">
+		DELETE FROM
+		    TMAD_REPORT_CON
+		WHERE
+			SURVSEQ = #{SURVSEQ}
+		    AND AREA = #{PAGEID}
+		    AND REPORT = #{REPORTNO}
+    </delete>	
+        
+    <delete id="deleteKediSchool" parameterType="java.util.Map">
+    		DELETE FROM
+    		   TMAD_USERSCHOOL
+    		 WHERE USERID = #{USERID}
+    </delete>	
+
+		
+	<!-- 회차정보 -->
+	<select id="selectSurvSeq" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+		A.SURVSEQ
+		,A.SURVSEQ SURVSEQ_CD
+		FROM 
+		(
+			SELECT distinct SURVSEQ  FROM TMAD_SURVEY ORDER BY SURVSEQ desc
+		) A
+	</select>	
+	
+	<!-- 학제구분 -->
+	<select id="selectSchkindCd" parameterType="java.util.Map" resultType="java.util.Map">
+		select CD,CDNM from TCCM_CODE 
+		WHERE CDTYPE ='0527'
+				AND SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND CD <![CDATA[ <> ]]>  'GROUPCD'	
+				ORDER BY 	CDNM
+	</select>			
+	
+	
+	<!--  취업담당자 목록 -->
+	<select id="selectChargeUserList" parameterType="java.util.Map" resultType="java.util.Map">	
+	
+		
+			SELECT 
+				D.SURVSEQ ,D.SURVKINDCD  
+				,D.USERID ,D.USERGRPTYPE ,D.USERNM 
+				,D.DEPTNM ,D.TELNO 
+				,D.MOBILENO ,D.FAXNO ,D.EMAILADDR 
+				,D.PSNINFOAGREE
+				
+		       ,D.AUTHYN
+		       ,D.WORKYN_STR				
+				
+				,D.SCHCD  , D.ORGCD
+				,D.USERGRPNM
+				,D.SCHKINDCDNM
+				,D.SCHNM
+				,D.ORGCDNM 
+				,D.SCHKINDCD
+				
+			FROM		
+			(
+		
+				SELECT 
+					C.SURVSEQ ,C.SURVKINDCD  
+					,C.USERID ,C.USERGRPTYPE ,C.USERNM 
+					,C.DEPTNM ,C.TELNO 
+					,C.MOBILENO ,C.FAXNO ,C.EMAILADDR 
+					,C.PSNINFOAGREE
+					
+			       ,CASE C.PSNINFOAGREE
+			         WHEN '1' THEN '인증'
+			         ELSE '미인증'
+			         END as AUTHYN		
+					,CASE C.WORKYN
+			         WHEN '1' THEN '사용'
+			         ELSE '미사용'
+			         END as WORKYN_STR			         		
+					
+					,C.SCHCD  , C.ORGCD
+					,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0104', C.USERGRPTYPE) AS USERGRPNM
+					,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'0527', SC.SCHKINDCD) AS SCHKINDCDNM
+					,SC.SCHNM
+					,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1001', SC.ORGCD) AS ORGCDNM 
+					,SC.SCHKINDCD
+					
+				FROM
+				(
+					SELECT 
+						#{SURVSEQ} SURVSEQ ,#{SURVKINDCD} SURVKINDCD  
+						,U.USERID ,U.USERGRPTYPE , SP_DEC_FU( U.USERNM ) USERNM
+						,U.DEPTNM ,  U.TELNO 
+						,SP_DEC_FU( U.MOBILENO ) MOBILENO ,U.FAXNO , SP_DEC_FU( U.EMAILADDR ) EMAILADDR
+						,U.PSNINFOAGREE
+						,U.WORKYN
+						,S.SCHCD , S.ORGCD
+					FROM TMAD_USER  U
+					LEFT OUTER JOIN TMAD_USERSCHOOL S ON (   U.USERID = S.USERID    ) 
+					WHERE  U.USERGRPTYPE = '4' 
+						<if test="use_yn != null">
+			        		<![CDATA[
+			        		  AND U.WORKYN = #{use_yn} 
+			        		]]>					
+						</if>					 
+						ORDER BY U.WORKDTHM DESC 
+				) C
+					LEFT OUTER JOIN TMAD_SCHOOL SC ON (   SC.SURVSEQ = #{SURVSEQ} AND  SC.SURVKINDCD = #{SURVKINDCD} AND C.SCHCD = SC.SCHCD  AND     C.ORGCD = SC.ORGCD    ) 
+					
+			) D	
+				WHERE 1=1 
+					
+				<if test="sel_keyword != null"> 
+					<if test='cmb_select_gubun == "S"'> 
+		        		<![CDATA[
+		        		AND UPPER(D.SCHNM) LIKE UPPER('%' || #{sel_keyword} || '%')
+		        		]]>					
+					</if>			
+					<if test='cmb_select_gubun == "U"'>
+		        		<![CDATA[
+		        		AND UPPER(D.USERNM) LIKE UPPER('%' || #{sel_keyword} || '%')
+		        		]]>					
+					</if>
+				</if>	
+				<if test="sel_scKind != null">
+	        		<![CDATA[
+	        		AND D.SCHKINDCD = #{sel_scKind} 
+	        		]]>					
+				</if>	
+				<if test="cmb_psninfoagree != null">
+	        		<![CDATA[
+	        		AND D.PSNINFOAGREE = #{cmb_psninfoagree} 
+	        		]]>					
+				</if>
+			ORDER BY D.SCHNM, D.ORGCD
+				
+				
+	</select>	
+	
+	
+		
+	<!--  학교목록 팝업 -->
+	<select id="selectSchoolList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT ROWNUM AS RN
+				,SCHNM
+				,SCHCD
+				,ORGCD
+				,SCHKINDCD
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,'0527', SCHKINDCD) AS SCHKINDCDNM
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,'0060', UNIGRADECD) AS UNIGRADECDNM
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,'1001', ORGCD) AS ORGCDNM
+			  FROM TMAD_SCHOOL
+			 WHERE 
+			  SURVSEQ = #{SURVSEQ}
+			  AND SURVKINDCD = #{SURVKINDCD}
+			<if test="searchValue != null">
+        		<![CDATA[
+        		AND UPPER(SCHNM) LIKE UPPER('%' || #{searchValue} || '%')
+        		]]>					
+			</if>			  
+			  ORDER BY SCHNM 
+	</select>		
+		
+	<!-- 담당 학교목록 -->
+	<select id="getChargeSchoolLise" parameterType="java.util.Map" resultType="java.util.Map">
+				
+		  			SELECT 
+		  				SH.SCHCD 
+		  				,  SH.ORGCD
+		  				, ( SELECT SCHNM  FROM TMAD_SCHOOL WHERE SCHCD = SH.SCHCD AND  SURVSEQ = #{SURVSEQ} AND  SURVKINDCD = #{SURVKINDCD} AND ORGCD = SH.ORGCD ) SCHNM 
+					  FROM TMAD_USERSCHOOL  SH 
+					 WHERE 
+					 	SH.USERID =  #{USERID}
+					 	ORDER BY WORKDTHM 
+						
+			
+	</select>		
+				
+		
+	<!-- 사용자 중복 확인  -->
+	<select id="checkOverlapCharge" parameterType="java.util.Map" resultType="int">
+			SELECT count(USERID)
+			  FROM TMAD_USER
+			 WHERE 
+			  USERID = #{edt_user_id}
+	</select>			
+		
+		
+	<!-- 취업담당자 등록 -->
+	<insert id="insertChargeUser" parameterType="java.util.Map">
+
+			INSERT INTO TMAD_USER( 
+					USERID
+					,USERGRPTYPE
+					,USERNM
+					,PASSWD
+					,DEPTNM
+					,TELNO
+					,MOBILENO
+					,FAXNO
+					,EMAILADDR
+					,SMSYN
+					,SCHCD
+					,WORKYN
+					,ORIPASSWDYN
+					,WORKERID
+					,WORKDTHM
+				)
+			VALUES(
+				  #{edt_user_id}
+				, '4'
+				,SP_ENC_FU( #{edt_user_nm} )
+				, SP_PWENC_FU( DBMS_RANDOM.STRING('A',6) )
+				, #{edt_depart}
+				,  #{edt_tel} 
+				, SP_ENC_FU( #{edt_phone} )
+				, #{edt_fax}
+				, SP_ENC_FU( #{edt_user_id} )
+				, #{sms_agree}
+				, #{edt_sh00_cd}
+				, '1'
+				, '1'
+				, #{WORKERID}
+				, SYSDATE
+			)	
+    </insert>		
+    
+    
+ 	<!-- 취업담당자 수정 -->
+	<update id="updateChargeUser" parameterType="java.util.Map">
+
+			UPDATE TMAD_USER
+
+					SET USERNM = SP_ENC_FU( #{edt_user_nm})
+					,DEPTNM = #{edt_depart}
+					,TELNO =  #{edt_tel}
+					,MOBILENO = SP_ENC_FU( #{edt_phone})
+					,FAXNO = #{edt_fax}
+					,WORKYN = '1'
+					,SCHCD = #{edt_sh00_cd}
+					,MODIFIERID = #{WORKERID} 
+					,MODDTHM = SYSDATE
+
+				WHERE  USERID = #{edt_user_id}
+		
+    </update>	   
+    
+		
+	<!-- 사용자 정보 -->
+	<select id="selectChargeId" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT USERID
+			  FROM TMAD_USER
+			 WHERE 
+			  USERID = #{edt_user_id}
+	</select>    
+		
+	<!-- 담당학교 삭제 -->
+	<delete id="deleteChargeSchool" parameterType="java.util.Map">
+			delete from TMAD_USERSCHOOL where USERID = #{USERID}			
+    </delete>			
+
+	<!-- 담당학교 등록 -->
+	<insert id="insertChargeSchool" parameterType="java.util.Map">
+			INSERT INTO TMAD_USERSCHOOL( 
+					USERID
+					,USERGRPTYPE
+					,SCHCD
+					,ORGCD
+					,WORKERID
+					,WORKDTHM
+				)
+			VALUES(
+				  #{USERID}
+				, #{USERGRPTYPE}
+				, #{SCHCD}
+				, #{ORGCD}
+				, #{WORKERID}
+				, SYSDATE
+			)	
+    </insert>	
+
+
+	<!-- 학교 담당자 중복 체크 -->
+	<select id="selecDupScoolChk" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT USERID 
+			  FROM TMAD_USERSCHOOL 
+			 WHERE 
+			 USERID <![CDATA[ <> ]]> #{USERID}
+			 AND USERGRPTYPE = #{USERGRPTYPE}
+			 AND SCHCD = #{SCHCD}
+			 AND ORGCD = #{ORGCD}
+	</select>	
+
+
+	<!-- 아이디 중복 체크 -->
+	<select id="checkOverlapUser" parameterType="java.util.Map" resultType="int">
+			SELECT count(USERID)
+			  FROM TMAD_USER
+			 WHERE 
+			 USERID = #{USERID}
+	</select>	
+
+	<!-- 아이디 중복 체크 -->
+	<select id="checkOverlapSchool" parameterType="java.util.Map" resultType="int">
+			SELECT count(SCHCD)
+			  FROM TMAD_SCHOOL
+			 WHERE 
+				SURVSEQ=#{SURVSEQ} 
+				AND SURVKINDCD=#{SURVKINDCD}
+			 	AND SCHCD = #{SCHCD}
+			 	AND ORGCD = #{ORGCD}
+	</select>	
+
+	<!-- 아이디 중복 체크 -->
+	<select id="checkOverlapMenuCon" parameterType="java.util.Map" resultType="int">
+			SELECT count(PAGEID)
+			  FROM TMAD_MENU_CON
+			 WHERE 
+				PAGEID=#{PAGEID} 
+	</select>	
+	
+	<!-- 아이디 중복 체크 -->
+	<select id="checkOverlapReportCon" parameterType="java.util.Map" resultType="int">
+			SELECT count(REPORT)
+			  FROM TMAD_REPORT_CON
+			 WHERE 
+			 	SURVSEQ = #{SURVSEQ}
+				AND AREA = #{PAGEID}
+				AND REPORT = #{REPORTNO}  
+	</select>	
+	
+	
+		
+	<!-- 임시로그인 용 ################################### -->
+	<select id="selectTempUserList" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+			    USR.SURVSEQ
+			    , USR.SURVKINDCD
+			    , DECODE(SCH.SCHNM, NULL,DECODE(SCHDEPT.SCHNM,NULL,'',SCHDEPT.SCHNM||' '||SP_CODENAME_FU('201231', 'AG','1001', SCHDEPT.ORGCD)||'('||SCHDEPT.SCHCD||')'),DECODE(SCH.SCHNM,NULL,'',SCH.SCHNM||' '||SP_CODENAME_FU('201231', 'AG','1001', SCH.ORGCD)||'('||SCH.SCHCD||')')) AS SCHNM
+			    , DECODE(UDEPT.DETAILDEPTNM,NULL,'',UDEPT.DETAILDEPTNM||'('||UDEPT.DEPTCD||')') AS DEPTNM
+			    , USR.USERID
+			    , USR.USERGRPTYPE  
+			    , ( SELECT CDNM FROM  TCCM_CODE WHERE  CDTYPE =  '0104'   AND   CD = USR.USERGRPTYPE AND SURVSEQ = '201231' and ROWNUM =1 ) USERGRPNM
+			    , SP_DEC_FU( USR.USERNM ) USERNM
+			    , USR.DEPTNM
+			    , USR.TELNO
+			    , SP_DEC_FU( USR.MOBILENO) MOBILENO
+			    , USR.FAXNO
+			    , SP_DEC_FU( USR.EMAILADDR) EMAILADDR
+			  FROM 
+		  		TMAD_USER USR
+				left outer join tmad_userschool USCH on USR.userid=USCH.userid
+				left outer join tmad_school SCH on USCH.schcd=SCH.schcd and USCH.orgcd=SCH.orgcd and SCH.survseq='201231' and SCH.survkindcd='AG'
+				left outer join tmad_deptuser UDEPT on USR.userid=UDEPT.userid     
+				left outer join tmad_school SCHDEPT on UDEPT.schcd=SCHDEPT.schcd and UDEPT.orgcd=SCHDEPT.orgcd and SCHDEPT.survseq='201231' and SCHDEPT.survkindcd='AG'     
+			 WHERE 
+			 	1 = 1
+			 	AND WORKYN='1'
+			<if test="edt_user_grptype != null">			 
+				and USR.usergrptype='' || #{edt_user_grptype} || ''
+			</if>
+
+			<if test="edt_user_schnm != null">			 
+				and SCH.schnm like UPPER('%' || #{edt_user_schnm} || '%')
+			</if>
+
+			<if test="edt_user_id != null">
+        		<![CDATA[
+        		AND (    UPPER(USR.USERID) LIKE UPPER('%' || #{edt_user_id} || '%')    or  UPPER( SP_DEC_FU( USR.USERNM ) ) LIKE UPPER('%' || #{edt_user_id} || '%')  )
+        		]]>					
+			</if>				 
+			GROUP BY 			    
+				USR.SURVSEQ
+			    , USR.SURVKINDCD
+                , DECODE(SCH.SCHNM, NULL,DECODE(SCHDEPT.SCHNM,NULL,'',SCHDEPT.SCHNM||' '||SP_CODENAME_FU('201231', 'AG','1001', SCHDEPT.ORGCD)||'('||SCHDEPT.SCHCD||')'),DECODE(SCH.SCHNM,NULL,'',SCH.SCHNM||' '||SP_CODENAME_FU('201231', 'AG','1001', SCH.ORGCD)||'('||SCH.SCHCD||')'))
+                , DECODE(UDEPT.DETAILDEPTNM,NULL,'',UDEPT.DETAILDEPTNM||'('||UDEPT.DEPTCD||')')
+			    , USR.USERID
+			    , USR.USERGRPTYPE  
+			    , USR.USERNM 
+			    , USR.DEPTNM
+			    , USR.TELNO
+			    , USR.MOBILENO
+			    , USR.FAXNO
+			    , USR.EMAILADDR
+                , USR.WORKDTHM
+			 ORDER BY 
+			 	DECODE(SCH.SCHNM, NULL,DECODE(SCHDEPT.SCHNM,NULL,'',SCHDEPT.SCHNM||' '||SP_CODENAME_FU('201231', 'AG','1001', SCHDEPT.ORGCD)||'('||SCHDEPT.SCHCD||')'),DECODE(SCH.SCHNM,NULL,'',SCH.SCHNM||' '||SP_CODENAME_FU('201231', 'AG','1001', SCH.ORGCD)||'('||SCH.SCHCD||')')) ASC
+                , DECODE(UDEPT.DETAILDEPTNM,NULL,'',UDEPT.DETAILDEPTNM||'('||UDEPT.DEPTCD||')') ASC
+	</select>		
+		
+	<select id="chkActive" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+				COUNT(*) CNT
+			 FROM TMAD_MENU_CON A
+			 WHERE 
+			   A.PAGEID = #{PAGEID}
+			   AND A.START_DATETIME <![CDATA[ <= ]]> SYSDATE
+			   AND A.END_DATETIME <![CDATA[ >= ]]> SYSDATE			   
+	</select>	
+	
+	<select id="chkView" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				#{SURVSEQ} SURVSEQ
+				, #{AREA} AREA
+				, #{REPORT} REPORT 
+				, (select count(*) STATUS FROM TMAD_REPORT_CON A WHERE A.SURVSEQ = #{SURVSEQ} AND A.AREA = #{AREA} AND A.REPORT = #{REPORT} ) STATUS
+			 FROM DUAL
+			 
+	</select>
+</mapper>

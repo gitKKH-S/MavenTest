@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="HpQnaMapper">
+
+	<select id="searchQnaCnt" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH TB_CNT AS (
+			SELECT 
+				A.BOARDSEQ, A.BBSNO, A.BOARDTYPECD, A.SURVYEAR, A.SURVKINDCD, A.SUBJECT, A.TEXT, A.NOTICEYN, A.SECRETYN, A.WORKERID, NVL(SP_DEC_FU(COALESCE(A.WORKERNM, B.USERNM)), ' ') as WORKERNM, A.TYPECD, A.ANSWER
+            	, B.USERID, B.USERNM  
+			FROM TMHP_BOARD A
+				LEFT OUTER JOIN TMAD_USER B ON A.WORKERID = B.USERID
+			<where>
+				BOARDSEQ = '5' 
+				AND NOT DELYN = '1'
+					<if test=' SURVYEAR != null and SURVYEAR != "" '>
+						AND A.SURVYEAR = #{SURVYEAR}
+					</if>
+					<if test=' SURVKINDCD != null and SURVKINDCD != "" '>
+						AND A.SURVKINDCD = #{SURVKINDCD}
+					</if>
+					<if test=' TYPECD != null and TYPECD != "" '>
+						AND A.TYPECD = #{TYPECD}
+					</if>					
+			</where>
+		)
+		SELECT COUNT(BBSNO) AS CNT
+		FROM TB_CNT
+		<where>
+			<if test=' KEYWORD != null and SUBJECT == "Y" '>
+				OR SUBJECT LIKE '%' || #{KEYWORD} || '%'			
+			</if>
+			<if test=' KEYWORD != null and ANSWER == "Y" '>
+				OR ANSWER LIKE '%' || #{KEYWORD} ||'%'			
+			</if>
+			<if test=' KEYWORD != null and WORKERNM == "Y" '>
+				OR USERNM LIKE '%' || #{KEYWORD} || '%'	
+			</if>		
+		</where>		
+	</select>
+	
+	<select id="searchQnaList" parameterType="java.util.Map" resultType="java.util.Map">
+	 	WITH SCHOOL AS (
+	 			SELECT DISTINCT SURVSEQ, SCHCD, ORGCD, SCHNM FROM TMAD_SCHOOL ORDER BY SURVSEQ DESC
+	 	),  BASE AS (
+						SELECT 
+					 		A.BOARDSEQ, A.BBSNO, A.BOARDTYPECD, A.SURVYEAR, A.SURVKINDCD, B.CDNM AS SURVKINDNM
+					 		, A.TYPECD
+				            , CASE WHEN A.TYPECD = '1' THEN '조사지침'
+				            	WHEN A.TYPECD = '2' THEN '프로그램(공통)'
+				            	WHEN A.TYPECD = '3' THEN '학과담당자'
+				            	WHEN A.TYPECD = '4' THEN '전산담당자'
+				            	WHEN A.TYPECD = '5' THEN '취업담당자'
+				            	WHEN A.TYPECD = '6' THEN '홈페이지'
+				            	WHEN A.TYPECD = '7' THEN '기타'
+				            	ELSE '' END
+				            	AS TYPENM
+					 		, A.REFNO, A.SUBJECT, A.ANSWER
+					 		, A.NOTICEYN, A.SECRETYN, A.HIT, A.DELYN
+					 		, CASE 
+					 			WHEN (SELECT COUNT(ATT_IDT_NO) FROM TMHP_BOARDFILE WHERE ATT_IDT_NO = A.FILEID) > 0 THEN  '1' 
+					 			ELSE '2' END AS FILEYN
+							, A.WORKERID, NVL(SP_DEC_FU(COALESCE(A.WORKERNM, C.USERNM)), ' ') as WORKERNM, A.WORKDTHM, A.MODIFIERID, A.MODDTHM
+							, CASE WHEN C.USERGRPTYPE='1' OR C.USERGRPTYPE='2' OR C.USERGRPTYPE='8' THEN C.DEPTNM
+					           ELSE           	
+					           		(SELECT S2.SCHNM 
+					           		FROM TMAD_USERSCHOOL S1
+					           				LEFT OUTER JOIN TMAD_SCHOOL S2 ON S1.SCHCD = S2.SCHCD AND S1.ORGCD = S2.ORGCD
+							        WHERE S1.USERID = A.WORKERID AND ROWNUM=1)
+					           	END	AS  SCHNM  
+							, (SELECT COUNT(BBSNO) FROM TMHP_BOARD WHERE REFNO = A.BBSNO AND NOT DELYN = '1') AS REPLYCNT
+						FROM TMHP_BOARD A
+							LEFT OUTER JOIN (SELECT DISTINCT CD, CDNM
+											FROM TCCM_CODE
+											WHERE CDTYPE = '0079' AND CD != 'GROUPCD'
+										) B ON A.SURVKINDCD = B.CD 
+							LEFT OUTER JOIN TMAD_USER C ON A.WORKERID = C.USERID
+							LEFT OUTER JOIN SCHOOL D ON C.SURVSEQ=D.SURVSEQ AND C.SCHCD = D.SCHCD AND C.ORGCD = D.ORGCD
+						<where> 
+							A.BOARDSEQ = '5' /* 1.공지사항 ,2.취업통계소식, 3.자료실, 4.FAQ, 5.QnA */
+							AND NOT A.DELYN = '1'
+							<if test=' SURVYEAR != null and SURVYEAR != "" '>
+								AND A.SURVYEAR = #{SURVYEAR}
+							</if>
+							<if test=' SURVKINDCD != null and SURVKINDCD != "" '>
+								AND A.SURVKINDCD = #{SURVKINDCD}
+							</if>		
+							<if test=' TYPECD != null and TYPECD != "" '>
+								AND A.TYPECD = #{TYPECD}
+							</if>					
+						</where>
+						ORDER by A.WORKDTHM DESC
+		)
+		SELECT * FROM 
+			(
+				SELECT ROWNUM AS RNUM, T1.* FROM BASE T1
+				<where>
+					<if test=' KEYWORD != null and SUBJECT == "Y" '>
+						OR T1.SUBJECT LIKE '%' || #{KEYWORD} || '%'			
+					</if>
+					<if test=' KEYWORD != null and ANSWER == "Y" '>
+						OR T1.ANSWER LIKE '%' || #{KEYWORD} ||'%'			
+					</if>
+					<if test=' KEYWORD != null and WORKERNM == "Y" '>
+						OR T1.WORKERNM LIKE '%' || #{KEYWORD} || '%'			
+					</if>			
+				</where>
+			)
+		WHERE RNUM BETWEEN #{START} AND #{END}
+			
+	</select>
+	
+	<select id="selectQnaView" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH SCHOOL AS (
+	        select distinct
+	            SURVSEQ,
+	            SCHCD,
+	            ORGCD,
+	            SCHNM
+	        FROM
+	            TMAD_SCHOOL
+	        ORDER BY
+	            SURVSEQ DESC
+	    )
+		SELECT 
+			A.BOARDSEQ, A.BBSNO, A.BOARDTYPECD, A.SURVYEAR, A.SURVKINDCD, A.REFNO
+			, A.SUBJECT, A.ANSWER, A.NOTICEYN, A.TYPECD, A.SECRETYN
+			, A.HIT, A.DELYN
+			, A.FILEID
+			, A.WORKERID, TO_CHAR(A.WORKDTHM, 'YYYY-MM-DD HH24:MI') AS WORKDTHM, A.MODIFIERID, A.MODDTHM 
+			, (SELECT DISTINCT CDNM
+							FROM TCCM_CODE
+							WHERE CDTYPE = '0079' 
+								AND CD != 'GROUPCD'							
+								AND CD = A.SURVKINDCD) AS SURVKINDNM
+			, NVL(SP_DEC_FU(COALESCE(A.WORKERNM, B.USERNM)), ' ') as WORKERNM
+			, NVL(B.DEPTNM, ' ') AS DEPTNM
+			, NVL(C.SCHNM, ' ') AS SCHNM 
+		FROM TMHP_BOARD A		
+			LEFT OUTER JOIN TMAD_USER B ON A.WORKERID = B.USERID	
+			LEFT OUTER JOIN SCHOOL C ON B.SCHCD = C.SCHCD AND B.ORGCD = C.ORGCD
+		WHERE A.BOARDSEQ = '5'
+			AND A.BBSNO = #{BBSNO}	
+	</select>
+	
+	<select id="selectQnaReplyList"  parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			A.BBSNO
+			, A.ANSWER
+			, B.DEPTNM
+			, A.WORKERID
+			, NVL(SP_DEC_FU(COALESCE(A.WORKERNM, B.USERNM)), ' ') as WORKERNM
+			, TO_CHAR(A.WORKDTHM, 'YYYY-MM-DD HH24:MI') AS WORKDTHM
+		FROM TMHP_BOARD A
+			LEFT OUTER JOIN TMAD_USER B ON A.WORKERID = B.USERID
+		WHERE A.REFNO = #{BBSNO}
+			AND NOT A.DELYN = '1'
+		ORDER BY A.WORKDTHM DESC
+	</select>
+	
+		
+	<insert id="insertQna">
+		MERGE INTO 
+		    TMHP_BOARD TA
+		USING 
+		    dual
+		ON 
+		( 
+			TA.genkey = #{GENKEY}
+		)
+		WHEN NOT MATCHED THEN
+		INSERT
+		    (
+		        BOARDSEQ, BBSNO
+		        , SURVYEAR, SURVKINDCD
+		        , SUBJECT, ANSWER
+		        , SECRETYN
+		        , TYPECD
+		        , FILEID
+		        , WORKERID
+		        , WORKERNM
+		        , GENKEY
+		    ) VALUES (
+		        '5', seq_board.nextval
+				, #{SURVYEAR}, #{SURVKINDCD}			
+				, #{SUBJECT}, #{ANSWER}
+				, #{SECRETYN}
+				, #{TYPECD}
+				, #{FILEID}
+				, #{WORKERID}
+				, SP_ENC_FU(#{WORKERNM})
+		        , #{GENKEY}
+		    )	
+	</insert>
+	
+	<insert id="insertQnaReply">
+		INSERT INTO TMHP_BOARD (
+			BOARDSEQ, BBSNO
+			, ANSWER
+			, REFNO
+			, WORKERID
+			, WORKERNM
+		) VALUES (
+			'5', seq_board.nextval			
+			, #{ANSWER}
+			, #{REFNO}
+			, #{WORKERID}
+			, SP_ENC_FU(#{WORKERNM})
+		)	
+	</insert>
+	
+	
+	<update id="updateQna">
+		UPDATE TMHP_BOARD
+		SET 
+		    SURVYEAR    = #{SURVYEAR}, 
+		    SURVKINDCD  = #{SURVKINDCD},
+		     
+		    SUBJECT     = #{SUBJECT}, 
+		    ANSWER      = #{ANSWER}, 
+		    SECRETYN    = #{SECRETYN}, 
+		    TYPECD		= #{TYPECD},
+ 			FILEID		= #{FILEID},
+		    MODIFIERID  = #{MODIFIERID}, 
+		    MODDTHM     = SYSDATE
+		WHERE BOARDSEQ    = '5' 
+			AND BBSNO = #{BBSNO}
+			AND WORKERID = #{MODIFIERID}
+	</update>
+	
+	<update id="deleteQna">
+		UPDATE TMHP_BOARD
+		SET
+		    DELYN       = '1', 
+		    MODIFIERID  = #{MODIFIERID}, 
+		    MODDTHM     = SYSDATE
+		WHERE BOARDSEQ    = '5'
+			AND BBSNO = #{BBSNO}	
+	</update>
+	
+</mapper>

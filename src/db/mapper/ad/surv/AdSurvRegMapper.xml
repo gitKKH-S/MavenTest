@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdSurvRegMapper">
+	
+	<select id="selectSurvReg" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT SURVSEQ
+				,SURVKINDCD
+				,SURVYEAR
+				,SURVSTRTDT
+				,SURVENDDT
+				,SURVNM
+				,REMARK
+				,SURVSTATUSCD
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,'6009', SURVSTATUSCD) AS SURVSTATUSCDNM
+				,SURVOBJ
+				,WORKERID
+				,WORKDTHM
+			  FROM TMAD_SURVEY 
+			 WHERE 1=1			 
+			<if test="SURVSEQ != null">
+				AND SURVSEQ = #{SURVSEQ}
+			</if>
+			<if test="SURVKINDCD != null">
+				AND SURVKINDCD = #{SURVKINDCD}
+			</if>
+			<if test="STARTSURVSEQ != null">
+				AND SURVSEQ >= #{STARTSURVSEQ}
+			</if>
+			ORDER BY SURVSEQ DESC
+	</select>	
+	
+	<select id="listSurvReg" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT ROWNUM AS RN
+				,SURVSEQ
+				,SURVKINDCD
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,'0079', SURVKINDCD) AS SURVKINDNM
+				,SURVYEAR
+				,SURVSTRTDT
+				,SURVENDDT
+				,SURVNM
+				,REMARK
+				,SURVSTATUSCD
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,'6009', SURVSTATUSCD) AS SURVSTATUSCDNM
+				,SURVOBJ
+				,WORKERID
+				,WORKDTHM
+			  FROM TMAD_SURVEY 
+			 ORDER BY SURVSEQ DESC
+	</select>	
+	
+	<insert id="mergeSurvReg" parameterType="java.util.Map">
+			MERGE INTO TMAD_SURVEY S
+		    USING DUAL 
+		       ON (S.SURVSEQ = #{SURVSEQ} AND S.SURVKINDCD = #{SURVKINDCD})
+		    WHEN MATCHED THEN
+		        UPDATE SET S.SURVSTRTDT = #{SURVSTRTDT}
+		        			,S.SURVENDDT = #{SURVENDDT}
+		        			,S.SURVNM = #{SURVNM}
+		        			,S.REMARK = #{REMARK}
+		        			,S.SURVOBJ = #{SURVOBJ}
+		        			,WORKERID = 'system'
+		        			,WORKDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.SURVSEQ, S.SURVKINDCD, S.SURVYEAR, S.SURVSTRTDT, S.SURVENDDT, S.SURVNM, S.REMARK, S.SURVSTATUSCD,S.SURVOBJ, S.WORKERID, S.WORKDTHM ) 
+		        VALUES (#{SURVSEQ}, #{SURVKINDCD}, #{SURVYEAR}, #{SURVSTRTDT}, #{SURVENDDT}, #{SURVNM}, #{REMARK}, '1', #{SURVOBJ},'system', SYSDATE )
+	</insert>
+	
+	<resultMap id="survMap" type="hashmap" >
+		<result property="errRETURN" column="errRETURN" />
+	</resultMap> 	
+	<select  id="createSurvReg" statementType="CALLABLE" parameterType="java.util.Map">
+		{ CALL SP_SURVCREATE_PR(
+			#{SURVSEQ},
+			#{SURVKINDCD},
+			#{SURVSTRTDT},
+			#{SURVENDDT},
+			#{errRETURN, mode=OUT, jdbcType=VARCHAR, resultMap=survMap} ) } 
+	</select >
+
+	<select id="getTmadHP" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			*
+		FROM 
+			TMAD_HP
+		WHERE 
+			1=1
+	</select>
+				
+	<update id="setTmadHP" parameterType="java.util.Map" flushCache="true">
+			UPDATE 
+				TMAD_HP 
+			SET 
+				SURVMSG = #{SURVMSG}
+				, SURVSTRTDT = #{SURVSTARTDT}
+				, SURVENDDT = #{SURVENDDT}
+				, SURVDATE = #{SURVDATE}
+				, NOTICE = #{NOTICE}
+				, RATEDT = #{SURVRATEDT}
+				, SCHRATETOTAL = #{SURVSCHRATETOAL}
+				, SCHRATEN = #{SURVSCHRATEN}
+				, SCHRATET = #{SURVSCHRATET}
+				, SCHRATEG = #{SURVSCHRATEG}
+	</update>					
+</mapper>

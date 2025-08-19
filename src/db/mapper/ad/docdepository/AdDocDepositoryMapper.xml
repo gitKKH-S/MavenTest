@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdDocDepositoryMapper">
+	
+	<select id="listDocDepository" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT DEPOSITORY_NO
+				,DEPOSITORY_NM
+				,USE_YN
+				,WORKERID
+				,TO_CHAR(WORKDTHM,'YYYY.MM.DD') as WORKDTHM
+				,MODIFIERID
+				,MODDTHM
+				,REG_NM
+				,MOD_NM
+			  FROM TMAD_DOCDEPOSITORY 
+			 WHERE 1=1			 
+			<if test="DEPOSITORY_NM != null">
+				AND DEPOSITORY_NM LIKE '%' || #{DEPOSITORY_NM} || '%'
+			</if>
+			<if test="USE_YN != null">
+				AND USE_YN = #{USE_YN}
+			</if>
+	</select>	
+	
+	<insert id="mergeDocDepository" parameterType="java.util.Map">
+	    <selectKey resultType="int" keyProperty="depNo" order="BEFORE">
+	       SELECT MAX(DEPOSITORY_NO)+1 AS depNo FROM TMAD_DOCDEPOSITORY      
+	    </selectKey> 	
+			MERGE INTO TMAD_DOCDEPOSITORY S
+		    USING DUAL 
+		       ON (S.DEPOSITORY_NO = #{DEPOSITORY_NO})
+		    WHEN MATCHED THEN
+		        UPDATE SET S.DEPOSITORY_NM = #{DEPOSITORY_NM}
+		        			,S.USE_YN = #{USE_YN}
+		        			,S.MODIFIERID = #{WORKERID}
+		        			,S.MODDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.DEPOSITORY_NO, S.DEPOSITORY_NM, S.USE_YN, S.WORKERID, S.WORKDTHM, S.REG_NM, S.MOD_NM ) 
+		        VALUES (TO_CHAR(#{depNo}), #{DEPOSITORY_NM}, #{USE_YN}, #{WORKERID} , SYSDATE, ( SELECT SP_DEC_FU(USERNM) FROM TMAD_USER WHERE USERID= #{WORKERID}), #{MOD_NM})
+	</insert>
+
+	<select id="listDocInsert" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH BASE AS (
+			SELECT T1.DOC_NO
+				,T2.DEPOSITORY_NM
+				,T1.DEPOSITORY_NO
+				,T1.SHELF
+				,T1.APPLY_YEAR
+				,T1.TRN_NO
+				,T1.APPLY_YEAR || T1.TRN_NO AS APPLY_YEAR_TRN_NO
+				,T1.UNI_NM
+				,T1.BRANCH_TYPE
+				,T1.TITLE
+				,T1.DOC_BUNDLE_NM
+				,T1.DOC_NM_NO
+				,T1.DEPOSITORY_DATE
+				,T1.DONE_DATE
+				,T1.RECEIPT
+				,T1.RECEIVE_DATE
+				,T1.DOC_STATUS
+				,T1.WORKERID			
+			  FROM TMAD_ELECDOCINFO T1, TMAD_DOCDEPOSITORY T2
+			 WHERE T1.DEPOSITORY_NO = T2.DEPOSITORY_NO			 
+			<if test="DEPOSITORY_NO != null">
+				AND T1.DEPOSITORY_NO = #{DEPOSITORY_NO}
+			</if>
+			<if test="APPLY_YEAR != null">
+				AND T1.APPLY_YEAR = #{APPLY_YEAR}
+			</if>
+			<if test="TRN_NO != null">
+				AND T1.TRN_NO = #{TRN_NO}
+			</if>
+			<if test="RECEIVE_SDATE != null">
+				AND T1.RECEIVE_DATE BETWEEN #{RECEIVE_SDATE} AND #{RECEIVE_EDATE} 
+			</if>
+			<if test="BRANCH_TYPE != null">
+				AND BRANCH_TYPE = #{BRANCH_TYPE}
+			</if>
+			<if test="UNI_NM != null">
+				AND UNI_NM LIKE '%' || #{UNI_NM} || '%'
+			</if>
+			<if test="DOC_NM_NO != null">
+				AND DOC_NM_NO LIKE '%' || #{DOC_NM_NO} || '%'
+			</if>
+			<if test="DOC_NO != null">
+				AND DOC_NO = #{DOC_NO} 
+			</if>
+			<if test="TITLE != null">
+				AND TITLE LIKE '%' || #{TITLE} || '%'
+			</if>								
+		)
+		SELECT * FROM 
+			(
+				SELECT ROWNUM AS RNUM, T1.* FROM BASE T1
+			)
+		WHERE RNUM BETWEEN #{START} AND #{END}					
+	</select>	
+
+	<select id="listDocInsertTOTALPAGECNT" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT COUNT(*) TOTALPAGECNT		
+			  FROM TMAD_ELECDOCINFO T1, TMAD_DOCDEPOSITORY T2
+			 WHERE T1.DEPOSITORY_NO = T2.DEPOSITORY_NO			 
+			<if test="DEPOSITORY_NO != null">
+				AND T1.DEPOSITORY_NO = #{DEPOSITORY_NO}
+			</if>
+			<if test="APPLY_YEAR != null">
+				AND T1.APPLY_YEAR = #{APPLY_YEAR}
+			</if>
+			<if test="TRN_NO != null">
+				AND T1.TRN_NO = #{TRN_NO}
+			</if>
+			<if test="RECEIVE_DATE != null">
+				AND T1.RECEIVE_DATE BETWEEN #{RECEIVE_FDATE} AND #{RECEIVE_EDATE} 
+			</if>
+			<if test="BRANCH_TYPE != null">
+				AND BRANCH_TYPE = #{BRANCH_TYPE}
+			</if>
+			<if test="UNI_NM != null">
+				AND UNI_NM LIKE '%' || #{UNI_NM} || '%'
+			</if>
+			<if test="DOC_NM_NO != null">
+				AND DOC_NM_NO LIKE '%' || #{DOC_NM_NO} || '%'
+			</if>
+			<if test="TITLE != null">
+				AND TITLE LIKE '%' || #{TITLE} || '%'
+			</if>									
+	</select>	
+	
+	<select id="listDocFile" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT FILE_NO
+				,DOC_NO
+				,ELEC_DOC_DIR
+				,ELEC_DOC_NM
+				,ELEC_DOC_PASS
+				,DEL_YN
+				,WORKERID
+				,WORKDTHM
+				,MODIFIERID
+				,MODDTHM
+			  FROM TMAD_DOCFILE 
+			 WHERE DOC_NO = #{DOC_NO} 		 
+	</select>
+
+	<select id="listDocDetail" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT DOC_NO
+				,JOB_STATS_RECH
+				,JOB_STATS_STAT
+				,ENTER_STAT
+				,EVID_LIST
+				,SCHOOL_EMPY
+				,SCHOOL_EMPY_CNT
+				,ABRD_EMPY
+				,ABRD_EMPY_CNT
+				,FARMMER
+				,FARMMER_CNT
+				,SOLDIER
+				,SOLDIER_CNT
+				,PERFORM
+				,PERFORM_CNT
+				,DPLAY
+				,DPLAY_CNT
+				,PUBLISH
+				,PUBLISH_CNT
+				,SCNRO
+				,SCNRO_CNT
+				,CPYRIGHT
+				,CPYRIGHT_CNT
+				,DOMESTIC
+				,DOMESTIC_CNT
+				,ABRD
+				,ABRD_CNT
+				,N_MISSIONED_TRAINEE
+				,N_MISSIONED_TRAINEE_CNT
+				,FLIGHT_TRAINEE
+				,FLIGHT_TRAINEE_CNT
+				,PRISONER
+				,PRISONER_CNT
+				,DEATH
+				,DEATH_CNT
+				,IMMIGRATION
+				,IMMIGRATION_CNT
+				,LONG_HOSPIT
+				,LONG_HOSPIT_CNT
+				,ETC
+				,POLICE_TRAINEE
+				,POLICE_TRAINEE_CNT
+				,FIREFIGHTING_TRAINEE
+				,FIREFIGHTING_TRAINEE_CNT
+				,WORKERID
+				,WORKDTHM
+				,MODIFIERID
+				,MODDTHM
+			  FROM TMAD_REPORTEVID 
+			 WHERE DOC_NO = #{DOC_NO} 		 
+	</select>
+	
+	<select id="selectDocNo" parameterType="java.util.Map" resultType="int">
+		SELECT NVL(MAX(DOC_NO),0)+1 AS docNo FROM TMAD_ELECDOCINFO 
+	</select>
+	
+	<insert id="mergeDocInfo" parameterType="java.util.Map">	
+			MERGE INTO TMAD_ELECDOCINFO S
+		    USING DUAL 
+		       ON (S.DOC_NO = #{DOC_NO})
+		    WHEN MATCHED THEN
+		        UPDATE SET S.DEPOSITORY_NO = #{DEPOSITORY_NO}
+							,S.SHELF = #{SHELF}
+							,S.APPLY_YEAR = #{APPLY_YEAR}
+							,S.TRN_NO = #{TRN_NO}
+							,S.UNI_NM = #{UNI_NM}
+							,S.BRANCH_TYPE = #{BRANCH_TYPE}
+							,S.TITLE = #{TITLE}
+							,S.DOC_BUNDLE_NM = #{DOC_BUNDLE_NM}
+							,S.DOC_NM_NO = #{DOC_NM_NO}
+							,S.DEPOSITORY_DATE = #{DEPOSITORY_DATE}
+							,S.DONE_DATE = #{DONE_DATE}
+							,S.RECEIPT = #{RECEIPT}
+							,S.RECEIVE_DATE = #{RECEIVE_DATE}
+							,S.DOC_STATUS = #{DOC_STATUS}
+		        			,S.MODIFIERID = #{WORKERID}
+		        			,S.MODDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.DOC_NO
+						,S.DEPOSITORY_NO
+						,S.SHELF
+						,S.APPLY_YEAR
+						,S.TRN_NO
+						,S.UNI_NM
+						,S.BRANCH_TYPE
+						,S.TITLE
+						,S.DOC_BUNDLE_NM
+						,S.DOC_NM_NO
+						,S.DEPOSITORY_DATE
+						,S.DONE_DATE
+						,S.RECEIPT
+						,S.RECEIVE_DATE
+						,S.DOC_STATUS
+						,S.WORKERID
+						,S.WORKDTHM
+						) 
+		        VALUES (#{DOC_NO}
+				        ,#{DEPOSITORY_NO}
+						,#{SHELF}
+						,#{APPLY_YEAR}
+						,#{TRN_NO}
+						,#{UNI_NM}
+						,#{BRANCH_TYPE}
+						,#{TITLE}
+						,#{DOC_BUNDLE_NM}
+						,#{DOC_NM_NO}
+						,#{DEPOSITORY_DATE}
+						,#{DONE_DATE}
+						,#{RECEIPT}
+						,#{RECEIVE_DATE}
+						,#{DOC_STATUS}
+		        		,#{WORKERID} 
+		        		,SYSDATE
+		        		)
+	</insert>	
+	
+	<insert id="mergeDocFile" parameterType="java.util.Map">
+	    <selectKey resultType="int" keyProperty="seqNo" order="BEFORE">
+	       SELECT NVL(MAX(FILE_NO),0)+1 AS seqNo FROM TMAD_DOCFILE      
+	    </selectKey> 	
+			MERGE INTO TMAD_DOCFILE S
+		    USING DUAL 
+		       ON (S.FILE_NO = TO_CHAR(#{seqNo}))
+		    WHEN MATCHED THEN
+		        UPDATE SET S.DOC_NO = #{DOC_NO}
+							,S.ELEC_DOC_DIR = #{ELEC_DOC_DIR}
+							,S.ELEC_DOC_NM = SUBSTR(#{ELEC_DOC_DIR} ,INSTR(#{ELEC_DOC_DIR}, '/',-1,1)+1,INSTR(#{ELEC_DOC_DIR}, '.')-1)
+							,S.ELEC_DOC_PASS = #{ELEC_DOC_PASS}
+							,S.DEL_YN = #{DEL_YN}
+		        			,S.MODIFIERID = #{WORKERID}
+		        			,S.MODDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.FILE_NO
+						,S.DOC_NO
+						,S.ELEC_DOC_DIR
+						,S.ELEC_DOC_NM
+						,S.ELEC_DOC_PASS
+						,S.DEL_YN
+						,S.WORKERID
+						,S.WORKDTHM
+						) 
+		        VALUES (TO_CHAR(#{seqNo})
+				        ,#{DOC_NO}
+						,#{ELEC_DOC_DIR}
+						,SUBSTR(#{ELEC_DOC_DIR} ,INSTR(#{ELEC_DOC_DIR}, '/',-1,1)+1,INSTR(#{ELEC_DOC_DIR}, '.')-1) 
+						,#{ELEC_DOC_PASS}
+						,'N'
+		        		,#{WORKERID} 
+		        		,SYSDATE
+		        		)
+	</insert>	
+		
+	<insert id="mergeDocDetail" parameterType="java.util.Map">	
+			MERGE INTO TMAD_REPORTEVID S
+		    USING DUAL 
+		       ON (S.DOC_NO = #{DOC_NO})
+		    WHEN MATCHED THEN
+		        UPDATE SET S.JOB_STATS_RECH = #{JOB_STATS_RECH}
+							,S.JOB_STATS_STAT = #{JOB_STATS_STAT}
+							,S.ENTER_STAT = #{ENTER_STAT}
+							,S.EVID_LIST = #{EVID_LIST}
+							,S.SCHOOL_EMPY = CASE WHEN #{SCHOOL_EMPY_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.SCHOOL_EMPY_CNT = #{SCHOOL_EMPY_CNT}
+							,S.ABRD_EMPY = CASE WHEN #{ABRD_EMPY_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.ABRD_EMPY_CNT = #{ABRD_EMPY_CNT}
+							,S.FARMMER = CASE WHEN #{FARMMER_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.FARMMER_CNT  = #{FARMMER_CNT}
+							,S.SOLDIER = CASE WHEN #{SOLDIER_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.SOLDIER_CNT  = #{SOLDIER_CNT}
+							,S.PERFORM = CASE WHEN #{PERFORM_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.PERFORM_CNT  = #{PERFORM_CNT}
+							,S.DPLAY = CASE WHEN #{DPLAY_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.DPLAY_CNT  = #{DPLAY_CNT}
+							,S.PUBLISH = CASE WHEN #{PUBLISH_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.PUBLISH_CNT  = #{PUBLISH_CNT}
+							,S.SCNRO = CASE WHEN #{SCNRO_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.SCNRO_CNT  = #{SCNRO_CNT}
+							,S.CPYRIGHT = CASE WHEN #{CPYRIGHT_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.CPYRIGHT_CNT  = #{CPYRIGHT_CNT}
+							,S.DOMESTIC = CASE WHEN #{DOMESTIC_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.DOMESTIC_CNT  = #{DOMESTIC_CNT}
+							,S.ABRD = CASE WHEN #{ABRD_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.ABRD_CNT  = #{ABRD_CNT}
+							,S.N_MISSIONED_TRAINEE = CASE WHEN #{N_MISSIONED_TRAINEE_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.N_MISSIONED_TRAINEE_CNT  = #{N_MISSIONED_TRAINEE_CNT}
+							,S.FLIGHT_TRAINEE = CASE WHEN #{FLIGHT_TRAINEE_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.FLIGHT_TRAINEE_CNT  = #{FLIGHT_TRAINEE_CNT}
+							,S.PRISONER = CASE WHEN #{PRISONER_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.PRISONER_CNT  = #{PRISONER_CNT}
+							,S.DEATH = CASE WHEN #{DEATH_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.DEATH_CNT  = #{DEATH_CNT}
+							,S.IMMIGRATION = CASE WHEN #{IMMIGRATION_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.IMMIGRATION_CNT  = #{IMMIGRATION_CNT}
+							,S.LONG_HOSPIT = CASE WHEN #{LONG_HOSPIT_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.LONG_HOSPIT_CNT  = #{LONG_HOSPIT_CNT}
+							,S.ETC = #{ETC}
+							,S.POLICE_TRAINEE = CASE WHEN #{POLICE_TRAINEE_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.POLICE_TRAINEE_CNT  = #{POLICE_TRAINEE_CNT}
+							,S.FIREFIGHTING_TRAINEE = CASE WHEN #{FIREFIGHTING_TRAINEE_CNT} IS NULL THEN 'N' ELSE 'Y' END
+							,S.FIREFIGHTING_TRAINEE_CNT  = #{FIREFIGHTING_TRAINEE_CNT}
+		        			,S.MODIFIERID = #{WORKERID}
+		        			,S.MODDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.DOC_NO
+						,S.JOB_STATS_RECH
+						,S.JOB_STATS_STAT
+						,S.ENTER_STAT
+						,S.EVID_LIST
+						,S.SCHOOL_EMPY
+						,S.SCHOOL_EMPY_CNT
+						,S.ABRD_EMPY
+						,S.ABRD_EMPY_CNT
+						,S.FARMMER
+						,S.FARMMER_CNT
+						,S.SOLDIER
+						,S.SOLDIER_CNT
+						,S.PERFORM
+						,S.PERFORM_CNT
+						,S.DPLAY
+						,S.DPLAY_CNT
+						,S.PUBLISH
+						,S.PUBLISH_CNT
+						,S.SCNRO
+						,S.SCNRO_CNT
+						,S.CPYRIGHT
+						,S.CPYRIGHT_CNT
+						,S.DOMESTIC
+						,S.DOMESTIC_CNT
+						,S.ABRD
+						,S.ABRD_CNT
+						,S.N_MISSIONED_TRAINEE
+						,S.N_MISSIONED_TRAINEE_CNT
+						,S.FLIGHT_TRAINEE
+						,S.FLIGHT_TRAINEE_CNT
+						,S.PRISONER
+						,S.PRISONER_CNT
+						,S.DEATH
+						,S.DEATH_CNT
+						,S.IMMIGRATION
+						,S.IMMIGRATION_CNT
+						,S.LONG_HOSPIT
+						,S.LONG_HOSPIT_CNT
+						,S.ETC
+						,S.POLICE_TRAINEE
+						,S.POLICE_TRAINEE_CNT
+						,S.FIREFIGHTING_TRAINEE
+						,S.FIREFIGHTING_TRAINEE_CNT
+						,S.WORKERID
+						,S.WORKDTHM
+						) 
+		        VALUES (#{DOC_NO}
+						,#{JOB_STATS_RECH}
+						,#{JOB_STATS_STAT}
+						,#{ENTER_STAT}
+						,#{EVID_LIST}
+						,CASE WHEN #{SCHOOL_EMPY_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{SCHOOL_EMPY_CNT}
+						,CASE WHEN #{ABRD_EMPY_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{ABRD_EMPY_CNT}
+						,CASE WHEN #{FARMMER_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{FARMMER_CNT}
+						,CASE WHEN #{SOLDIER_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{SOLDIER_CNT}
+						,CASE WHEN #{PERFORM_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{PERFORM_CNT}
+						,CASE WHEN #{DPLAY_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{DPLAY_CNT}
+						,CASE WHEN #{PUBLISH_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{PUBLISH_CNT}
+						,CASE WHEN #{SCNRO_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{SCNRO_CNT}
+						,CASE WHEN #{CPYRIGHT_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{CPYRIGHT_CNT}
+						,CASE WHEN #{DOMESTIC_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{DOMESTIC_CNT}
+						,CASE WHEN #{ABRD_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{ABRD_CNT}
+						,CASE WHEN #{N_MISSIONED_TRAINEE_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{N_MISSIONED_TRAINEE_CNT}
+						,CASE WHEN #{FLIGHT_TRAINEE_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{FLIGHT_TRAINEE_CNT}
+						,CASE WHEN #{PRISONER_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{PRISONER_CNT}
+						,CASE WHEN #{DEATH_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{DEATH_CNT}
+						,CASE WHEN #{IMMIGRATION_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{IMMIGRATION_CNT}
+						,CASE WHEN #{LONG_HOSPIT_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{LONG_HOSPIT_CNT}
+						,#{ETC}
+						,CASE WHEN #{POLICE_TRAINEE_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{POLICE_TRAINEE_CNT}
+						,CASE WHEN #{FIREFIGHTING_TRAINEE_CNT} IS NULL THEN 'N' ELSE 'Y' END
+						,#{FIREFIGHTING_TRAINEE_CNT}
+		        		,#{WORKERID} 
+		        		,SYSDATE
+		        		)
+	</insert>			
+	
+<!-- 
+	<insert id="mergeDocDetail" parameterType="java.util.Map">	
+			MERGE INTO TMAD_REPORTEVID S
+		    USING DUAL 
+		       ON (S.DOC_NO = #{DOC_NO})
+		    WHEN MATCHED THEN
+		        UPDATE SET S.JOB_STATS_RECH = #{JOB_STATS_RECH}
+							,S.JOB_STATS_STAT = #{JOB_STATS_STAT}
+							,S.ENTER_STAT = #{ENTER_STAT}
+							,S.EVID_LIST = #{EVID_LIST}
+							,S.SCHOOL_EMPY = #{SCHOOL_EMPY}
+							,S.SCHOOL_EMPY_CNT = #{SCHOOL_EMPY_CNT}
+							,S.ABRD_EMPY = #{ABRD_EMPY}
+							,S.ABRD_EMPY_CNT = #{ABRD_EMPY_CNT}
+							,S.FARMMER = #{FARMMER}
+							,S.FARMMER_CNT  = #{FARMMER_CNT}
+							,S.SOLDIER = #{SOLDIER}
+							,S.SOLDIER_CNT  = #{SOLDIER_CNT}
+							,S.PERFORM = #{PERFORM}
+							,S.PERFORM_CNT  = #{PERFORM_CNT}
+							,S.DPLAY = #{DPLAY}
+							,S.DPLAY_CNT  = #{DPLAY_CNT}
+							,S.PUBLISH = #{PUBLISH}
+							,S.PUBLISH_CNT  = #{PUBLISH_CNT}
+							,S.SCNRO = #{SCNRO}
+							,S.SCNRO_CNT  = #{SCNRO_CNT}
+							,S.CPYRIGHT = #{CPYRIGHT}
+							,S.CPYRIGHT_CNT  = #{CPYRIGHT_CNT}
+							,S.DOMESTIC = #{DOMESTIC}
+							,S.DOMESTIC_CNT  = #{DOMESTIC_CNT}
+							,S.ABRD = #{ABRD}
+							,S.ABRD_CNT  = #{ABRD_CNT}
+							,S.N_MISSIONED_TRAINEE = #{N_MISSIONED_TRAINEE}
+							,S.N_MISSIONED_TRAINEE_CNT  = #{N_MISSIONED_TRAINEE_CNT}
+							,S.FLIGHT_TRAINEE = #{FLIGHT_TRAINEE}
+							,S.FLIGHT_TRAINEE_CNT  = #{FLIGHT_TRAINEE_CNT}
+							,S.PRISONER = #{PRISONER}
+							,S.PRISONER_CNT  = #{PRISONER_CNT}
+							,S.DEATH = #{DEATH}
+							,S.DEATH_CNT  = #{DEATH_CNT}
+							,S.IMMIGRATION = #{IMMIGRATION}
+							,S.IMMIGRATION_CNT  = #{IMMIGRATION_CNT}
+							,S.LONG_HOSPIT = #{LONG_HOSPIT}
+							,S.LONG_HOSPIT_CNT  = #{LONG_HOSPIT_CNT}
+							,S.ETC = #{ETC}
+							,S.POLICE_TRAINEE = #{POLICE_TRAINEE}
+							,S.POLICE_TRAINEE_CNT  = #{POLICE_TRAINEE_CNT}
+							,S.FIREFIGHTING_TRAINEE = #{FIREFIGHTING_TRAINEE}
+							,S.FIREFIGHTING_TRAINEE_CNT  = #{FIREFIGHTING_TRAINEE_CNT}
+		        			,S.MODIFIERID = #{WORKERID}
+		        			,S.MODDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.DOC_NO
+						,S.JOB_STATS_RECH
+						,S.JOB_STATS_STAT
+						,S.ENTER_STAT
+						,S.EVID_LIST
+						,S.SCHOOL_EMPY
+						,S.SCHOOL_EMPY_CNT
+						,S.ABRD_EMPY
+						,S.ABRD_EMPY_CNT
+						,S.FARMMER
+						,S.FARMMER_CNT
+						,S.SOLDIER
+						,S.SOLDIER_CNT
+						,S.PERFORM
+						,S.PERFORM_CNT
+						,S.DPLAY
+						,S.DPLAY_CNT
+						,S.PUBLISH
+						,S.PUBLISH_CNT
+						,S.SCNRO
+						,S.SCNRO_CNT
+						,S.CPYRIGHT
+						,S.CPYRIGHT_CNT
+						,S.DOMESTIC
+						,S.DOMESTIC_CNT
+						,S.ABRD
+						,S.ABRD_CNT
+						,S.N_MISSIONED_TRAINEE
+						,S.N_MISSIONED_TRAINEE_CNT
+						,S.FLIGHT_TRAINEE
+						,S.FLIGHT_TRAINEE_CNT
+						,S.PRISONER
+						,S.PRISONER_CNT
+						,S.DEATH
+						,S.DEATH_CNT
+						,S.IMMIGRATION
+						,S.IMMIGRATION_CNT
+						,S.LONG_HOSPIT
+						,S.LONG_HOSPIT_CNT
+						,S.ETC
+						,S.POLICE_TRAINEE
+						,S.POLICE_TRAINEE_CNT
+						,S.FIREFIGHTING_TRAINEE
+						,S.FIREFIGHTING_TRAINEE_CNT
+						,S.WORKERID
+						,S.WORKDTHM
+						) 
+		        VALUES (#{DOC_NO}
+						,#{JOB_STATS_RECH}
+						,#{JOB_STATS_STAT}
+						,#{ENTER_STAT}
+						,#{EVID_LIST}
+						,#{SCHOOL_EMPY}
+						,#{SCHOOL_EMPY_CNT}
+						,#{ABRD_EMPY}
+						,#{ABRD_EMPY_CNT}
+						,#{FARMMER}
+						,#{FARMMER_CNT}
+						,#{SOLDIER}
+						,#{SOLDIER_CNT}
+						,#{PERFORM}
+						,#{PERFORM_CNT}
+						,#{DPLAY}
+						,#{DPLAY_CNT}
+						,#{PUBLISH}
+						,#{PUBLISH_CNT}
+						,#{SCNRO}
+						,#{SCNRO_CNT}
+						,#{CPYRIGHT}
+						,#{CPYRIGHT_CNT}
+						,#{DOMESTIC}
+						,#{DOMESTIC_CNT}
+						,#{ABRD}
+						,#{ABRD_CNT}
+						,#{N_MISSIONED_TRAINEE}
+						,#{N_MISSIONED_TRAINEE_CNT}
+						,#{FLIGHT_TRAINEE}
+						,#{FLIGHT_TRAINEE_CNT}
+						,#{PRISONER}
+						,#{PRISONER_CNT}
+						,#{DEATH}
+						,#{DEATH_CNT}
+						,#{IMMIGRATION}
+						,#{IMMIGRATION_CNT}
+						,#{LONG_HOSPIT}
+						,#{LONG_HOSPIT_CNT}
+						,#{ETC}
+						,#{POLICE_TRAINEE}
+						,#{POLICE_TRAINEE_CNT}
+						,#{FIREFIGHTING_TRAINEE}
+						,#{FIREFIGHTING_TRAINEE_CNT}
+		        		,#{WORKERID} 
+		        		,SYSDATE
+		        		)
+	</insert>			
+ -->
+
+	<delete id="deleteDocDetail" parameterType="java.util.Map">	
+			DELETE FROM TMAD_REPORTEVID S
+		    WHERE S.DOC_NO = #{DOC_NO}
+	</delete>
+	<delete id="deleteDocFile" parameterType="java.util.Map">	
+			DELETE FROM TMAD_DOCFILE S
+		    WHERE S.DOC_NO = #{DOC_NO}
+	</delete>
+	<delete id="deleteDocInfo" parameterType="java.util.Map">	
+			DELETE FROM TMAD_ELECDOCINFO S
+		    WHERE S.DOC_NO = #{DOC_NO}
+	</delete>
+</mapper>

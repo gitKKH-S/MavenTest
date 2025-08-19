@@ -1,0 +1,1400 @@
+var app = null;
+var _universityTypes = [
+  {value: '전문대학', text: '전문대학'},
+  {value: '대학', text: '대학'},
+  {value: '대학원', text: '대학원'},
+];
+
+var uiCodeRawData = null;
+
+var thisyear = new Date(Date.now()).getFullYear();
+var _birthList = [];
+for(let i=thisyear-35; i<thisyear-10;i++){
+	  _birthList.push({'value': i, 'text':i})
+}
+var _indateList = [];
+for(let i=thisyear-30; i<thisyear-1;i++){
+	  _indateList.push({'value': i, 'text':i})
+}
+var _outdateList = [];
+for(let i=thisyear-5; i<thisyear;i++){
+	  _outdateList.push({'value': i, 'text':i})
+}
+var _monthList = [];
+for(let i=1; i<13;i++){
+	  _monthList.push({'value': i, 'text':i})
+}
+var selectedBirth = thisyear - 26
+var selectedIndate = thisyear - 7
+var selectedOutdate = thisyear - 1
+
+function json_to_sheet(remappingData) {
+	  var _workSheet = {};
+	  var _maxC = _.max(remappingData.map(x => x.length));
+	  var _range = { s: { c: 0, r: 0 }, e: { c: _maxC, r: remappingData.length } };
+	  var mergesArray = [];
+
+	  remappingData.map((item, index) => {
+	    var option = item[0];
+	    var existsCount = item[1];
+	    var data = item.slice(2,14);
+
+	    var styleObject = {};
+
+	    if(option === 'bigtitle') {
+	      mergesArray.push({s:{r:index,c:0},e:{r:index,c:9}});
+	      styleObject = {
+	        border: {
+	          bottom: { style: 'thin', color: 'gray' },
+	          top: { style: 'thin', color: 'gray' },
+	          left: { style: 'thin', color: 'gray' },
+	          right: { style: 'thin', color: 'gray' },
+	        },
+	        font: {
+	          sz: 13,
+	          bold: true,
+	          //color: { rgb: '30839f' },
+	        },
+	        fill: {
+	          fgColor: { rgb: 'E3F2ED' },
+	        },
+	        alignment: { wrapText: true, horizontal: 'center', vertical: 'center' },
+	      };
+	    }
+	    else if(option === 'search1') {
+	      mergesArray.push({s:{r:index,c:0},e:{r:index,c:existsCount -1}});
+	      styleObject = {
+	        border: {
+	          top: { style: 'thin', color: 'gray' },
+	          left: { style: 'thin', color: 'gray' },
+	          right: { style: 'thin', color: 'gray' },
+	        },
+	      };
+	    }
+	    else if(option === 'search2') {
+	      mergesArray.push({s:{r:index,c:0},e:{r:index,c:existsCount -1}});
+	      styleObject = {
+	        border: {
+	          bottom: { style: 'thin', color: 'gray' },
+	          left: { style: 'thin', color: 'gray' },
+	          right: { style: 'thin', color: 'gray' },
+	        },
+	      };
+	    }
+	    if(option === 'header' || option === 'header-two-three' || option === 'header-two') {
+	      if(option === 'header-two-three') {
+	        mergesArray.push({s:{r:index,c:1},e:{r:index,c:2}});
+	        mergesArray.push({s:{r:index,c:3},e:{r:index,c:4}});
+	        mergesArray.push({s:{r:index,c:5},e:{r:index,c:6}});
+	      }
+	      if(option === 'header-two') {
+	        mergesArray.push({s:{r:index,c:1},e:{r:index,c:2}});
+	      }
+	      styleObject = {
+	        border: {
+	          bottom: { style: 'thin', color: 'gray' },
+	          top: { style: 'thin', color: 'gray' },
+	          left: { style: 'thin', color: 'gray' },
+	          right: { style: 'thin', color: 'gray' },
+	        },
+	        fill: {
+	          fgColor: { rgb: 'FFFFDE7' },
+	        },
+	        alignment: { wrapText: true, horizontal: 'center', vertical: 'center' },
+	      };
+	    }
+	    if(option === 'data' || option === 'data-first') {
+	      styleObject = {
+	        border: {
+	          bottom: { style: 'thin', color: 'gray' },
+	          top: { style: 'thin', color: 'gray' },
+	          left: { style: 'thin', color: 'gray' },
+	          right: { style: 'thin', color: 'gray' },
+	        },
+	        alignment: { wrapText: true, horizontal: 'center', vertical: 'center' },
+	      };
+	    }
+	    else {
+
+	    }
+
+	    data.map((subitem, subindex) => {
+	      var type = typeof subitem == 'number' ? 'n' : typeof subitem == 'boolean' ? 'b' : 'z';
+	      if(existsCount > subindex)
+	        if(option === 'data-first') {
+	          if(subindex === 0) {
+	            styleObject.fill = {fgColor: { rgb: 'FFFFDE7' }};
+	          }
+	          else {
+	            styleObject.fill = {fgColor: { rgb: 'FFFFFF' }};
+	          }
+	          
+	        }
+	        _workSheet[XLSX.utils.encode_cell({ r: index, c: subindex })] = { t: type, v: subitem, s: styleObject };
+	      });
+
+	    
+	    
+
+	  });
+	  _workSheet['!ref'] = XLSX.utils.encode_range(_range);
+	  return {data: _workSheet, mergesArray};
+	  
+	}
+
+
+	function s2ab(s) {
+	  var buf = new ArrayBuffer(s.length);
+	  var view = new Uint8Array(buf);
+	  for (var i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xff;
+	  return buf;
+	}
+
+	function Workbook() {
+	  if (!(this instanceof Workbook)) return new Workbook();
+	  this.SheetNames = [];
+	  this.Sheets = {};
+	}
+
+
+
+$(document).ready(function() {
+
+  $.ajax({
+    type: "GET",
+    url: "/swiss/cm/getPredUICode.do",
+    dataType: "text",
+    success: function (data) {
+      //if(result.code === 'SUCCESS') {
+      var responseData = JSON.parse(data);
+      uiCodeRawData = responseData;
+      var _license1 = _.map(arrayToObject(responseData, 'LICENSE_L'), function(item) {
+        var splitItem = item.value.split('_');
+        return {value: splitItem[1], text: {code: item.value, data: item.text}}
+      });
+
+      var _all_university = [];
+      var _uni_dept = [];
+      // var _all_subCode = [];
+      _.map(_.keys(responseData.UNIVERSITY), function(key) {
+        var nowTypeData = _.map(getJSONArray(responseData.UNIVERSITY[key]), function(item, index) {
+          var splitCode = item.text.split('_');
+          var unicode = splitCode[0]+'_'+splitCode[1];
+          var uniname = item.value[1] == '본교' ? item.value[0] : item.value[0]+'('+item.value[1]+')'; 
+          return {
+	            id: unicode,
+	            name: uniname,
+	          }
+        });
+
+        _all_university = _.concat(_all_university, nowTypeData);
+      });
+      
+//      if(selectUcode!="undefined_undefined"){
+//    	  new_all_university = []
+//    	  _all_university.forEach(function (item, index) {
+//    		  if(selectUcode == item.id)
+//    			  new_all_university.push(item)
+//    		});
+//    	  _all_university = new_all_university
+//      }
+
+
+      var _all_license = [];
+      
+      _.map(_.keys(responseData.LICENSE_M), function(key) {
+        var nowLicenseData = _.map(responseData.LICENSE_M[key], function(item, index) {
+          var values = item.split('_');
+          return {
+            id: values[0],
+            name: values[1],
+          }
+        });
+        _all_license = _.concat(_all_license, nowLicenseData);
+      });
+      
+//      _selectUcode = selectUcode;
+
+      app = new Vue({
+        el: "#app",
+        data: {
+          predicResult: true,
+          licenseTotalCount: null,
+          isResponse: false,
+          wantedResult: false,
+          wantedResultTitleList1: [],
+          wantedResultTitleList2: [],
+          wantedResultList1: [],
+          wantedResultList2: [],
+          wantedResultDescList1: [],
+          wantedResultDescList2: [],
+          isUIResponse: false,
+          isFetching: false,
+          //전문대학/대학/대학원
+          universityTypes: _universityTypes,
+          selectedUniversityType: null,
+
+          //대학검색
+          universitys:_all_university,
+          selectedUniversity: null,
+
+          //전공분류
+          department4: [],
+          departmemt1List: _.map(arrayToObject(responseData, 'DEPARTMENT_L'), function(item) {
+            var splitItem = item.value.split('_');
+            return {value: splitItem[1], text: {code: item.value, data: item.text}}
+          }),
+          departmemt4List: [],
+          selectedDepartmemt4: null,
+          selectedDepartmemt4Text: null,
+          uorgcode: null,
+          null_value:null,
+          uorgcodeList: [],
+          dncode: "A",
+          //편입여부
+          transfer: "2",
+          teach: "2",
+          oversea: "B",
+          internship: "2",
+
+          //토익
+          toeic: null,
+          gradeScore: null,
+          gradeScoreStandard: null,
+
+          //개인신상
+          gender:null,
+          inAge:null,
+          outAge:null,
+          highschoolAreaList: arrayToObject(responseData, 'HIGHSCHOOL_AREA'),
+          selectedHighschoolArea: null,
+          highschoolTypeList: arrayToObject(responseData, 'HIGHSCHOOL_TYPE'),
+          selectedHighschoolType: null,
+          birthList: _birthList,
+          indateList: _indateList,
+          outdateList: _outdateList,
+          monthList: _monthList,
+          birthyear: selectedBirth,
+          birthmonth: 1,
+          inyear: selectedIndate,
+          inmonth: 3,
+          outyear: selectedOutdate,
+          outmonth: 2,
+          birthList: _birthList,
+          indateList: _indateList,
+          outdateList: _outdateList,
+          monthList: _monthList,
+          
+          //자격증
+          license: [
+            {
+              license1List: _license1,
+              selectedLicense1: null,
+              selectedLicense1Text: null,
+              license2List: [],
+              selectedLicense2: null,
+              selectedLicense2Text: null,
+              license3List: _all_license,
+              selectedLicense3: null,
+              selectedLicense3Text: null,
+            },
+            {
+              license1List: _license1,
+              selectedLicense1: null,
+              selectedLicense1Text: null,
+              license2List: [],
+              selectedLicense2: null,
+              selectedLicense2Text: null,
+              license3List: _all_license,
+              selectedLicense3: null,
+              selectedLicense3Text: null,
+            },
+            {
+              license1List: _license1,
+              selectedLicense1: null,
+              selectedLicense1Text: null,
+              license2List: [],
+              selectedLicense2: null,
+              selectedLicense2Text: null,
+              license3List: _all_license,
+              selectedLicense3: null,
+              selectedLicense3Text: null,
+            }
+          ],
+
+          //희망업종
+          companySizes: arrayToObject(responseData, 'COMIND'),
+          selectedCompanySize: null,
+          selectedCompanySizeText: null,
+          companyTypes: arrayToObject(responseData, 'COMTYPE'),
+          selectedCompanyType: null,
+          selectedCompanyTypeText: null,
+          selectedDurationText: null,
+          selectedSalaryText: null,
+          wanted_duration: null,
+          wanted_salary: null,
+
+          companyList: arrayToObject(responseData, 'COMNM'),
+          companySearch: '',
+          companySearchResults: [],
+          isCompanyResultOpen: false,
+          selectedCompany: null,
+          searchResult: null,
+          wantedComtypeText: '',
+          wantedComindText: '',
+          wantedDurationText: '',
+          wantedSalaryText: '',
+          companyFindResult: null,
+          chart1: [],
+          chart2: [],
+          chart3: [],
+          chart4: [],
+
+        },
+        methods: {
+            excelExport: function () {
+                var _this = this;
+                var nowData = this.searchResult;
+                var ws_name = '진로예측';
+                var wb = new Workbook();
+
+                var getSubtitle = (title) => {
+                  return ['subtitle',13,title,'','','','','','','','','','','',''];
+                }
+                var wsData = [];
+                
+                var rowEmpty = ['empty',13,'','','','','','','','','','', '','',''];
+                wsData.push(rowEmpty);
+                var titleRow = ['bigtitle',13,'진로 예측','','','','','','','','',''];
+                wsData.push(titleRow);
+                wsData.push(rowEmpty);
+
+                var _selectedAllValue = [
+                  {seq: 1, name : '졸업학교', value: _this.selectedUniversity.name},
+                  {seq: 1, name : '전공학과', value: _this.selectedDepartmemt4.name },
+                  {seq: 1, name : '주간/야간', value: _this.dncode === 'A' ? '주간' : '야간' },
+                  {seq: 1, name : '성별', value: _this.gender === '1' ? '남자' : '여자' },
+                  {seq: 1, name : '고등학교 지역', value: $("#sel_higharea option:selected").text().replace('\n','').trim() },
+                  {seq: 1, name : '고등학교 유형', value: $("#sel_hightype option:selected").text().replace('\n','').trim() },
+                  {seq: 1, name : '출생년월', value: String(_this.birthyear) + '년  ' +  String(_this.birthmonth) +'월'},
+                  {seq: 1, name : '입학년월', value: String(_this.inyear) + '년  ' +  String(_this.inmonth) +'월' },
+                  {seq: 1, name : '졸업년월', value: String(_this.outyear) + '년  ' +  String(_this.outmonth) +'월' },
+                  {seq: 2, name : '편입여부', value: _this.transfer === '1' ? 'Y' : 'N' },
+                  {seq: 2, name : '교직과정이수여부', value: _this.teach === '1' ? 'Y' : 'N' },
+                  {seq: 2, name : '해외연수 여부', value: _this.oversea === '1' ? 'Y' : 'N' },
+                  {seq: 2, name : '현장경험 여부', value: _this.inter === '1' ? 'Y' : 'N' },
+                  {seq: 2, name : '졸업 학점', value: _this.gradeScore },
+                  {seq: 2, name : '졸업학점 만점', value: _this.gradeScoreStandard },
+
+                ] //대학명
+
+                var _optional = [];
+                var lictotcnt = 0;
+                var toeic = _this.toeic ? _this.toeic : 0;
+                var license1 = _this.license[0].selectedLicense3Text ? _this.license[0].selectedLicense3Text : '';
+                var license2 = _this.license[1].selectedLicense3Text ? _this.license[1].selectedLicense3Text : '';
+                var license3 = _this.license[2].selectedLicense3Text ? _this.license[2].selectedLicense3Text : '';
+                if(license1) lictotcnt += 1;
+                if(license2) lictotcnt += 1;
+                if(license3) lictotcnt += 1;
+                var wanted_comtype = _this.wantedComtypeText;
+                var wanted_comind = _this.wantedComindText;
+                var wanted_duration = _this.wantedDurationText;
+                var wanted_salary = _this.wantedSalaryText;
+                lictotcnt = _this.licenseTotalCount ? _this.licenseTotalCount : lictotcnt;
+                var _optional = [
+                    {name : '토익 점수', value: toeic ? toeic : 0 },
+                    {name : '총 자격증 개수', value: lictotcnt },
+                    {name : '자격증1', value: license1 },
+                    {name : '자격증2', value: license2 },
+                    {name : '자격증3', value: license3 },
+                    {name : '기업유형', value: wanted_comtype},
+                    {name : '기업분류', value: wanted_comind},
+                    {name : '취업까지 기간(개월)', value: wanted_duration},
+                    {name : '희망 급여', value: wanted_salary}
+                ];
+
+                var temp = '';
+                var temp2 = '';
+                _selectedAllValue.map((item, index) => {
+                  if(index != 0) {
+                    temp += ' / ';
+                  }
+                  temp += `${item.name}: ${item.value}`;
+                  //temp += `${item.value}`;
+                })
+                _optional.map((item, index) => {
+                  if(index != 0) {
+                    temp2 += ' / ';
+                  }
+                  //temp2 += `${item.value}`;
+                  temp2 += `${item.name}: ${item.value}`;
+                })
+                wsData.push(getSubtitle('▶ 검색 조건 (필수 항목)'));
+                wsData.push(['header',9, ..._selectedAllValue.filter(f => f.seq === 1).map(x => x.name)]);
+                wsData.push(['data',9, ..._selectedAllValue.filter(f => f.seq === 1).map(x => x.value)]);
+                wsData.push(['header',9, ..._selectedAllValue.filter(f => f.seq === 2).map(x => x.name)]);
+                wsData.push(['data',9, ..._selectedAllValue.filter(f => f.seq === 2).map(x => x.value)]);
+                // wsData.push(['header',_selectedAllValue.length, ..._selectedAllValue.map(x => x.name)]);
+                // wsData.push(['data',_selectedAllValue.length, ..._selectedAllValue.map(x => x.value)]);
+                wsData.push(rowEmpty);
+                wsData.push(getSubtitle('▶ 검색 조건 (선택 항목)'));
+                wsData.push(['header',_optional.length, ..._optional.map(x => x.name)]);
+                wsData.push(['data',_optional.length, ..._optional.map(x => x.value)]);
+                wsData.push(rowEmpty);
+
+
+                wsData.push(getSubtitle('▶ 기업 유형별 취업 가능성'));
+                wsData.push(['header',_this.chart1.length, ..._this.chart1.map(x => x.name)]);
+                wsData.push(['data',_this.chart1.length, ..._this.chart1.map(x => parseFloat((x.y*100).toFixed(2)))]);
+                wsData.push(rowEmpty);
+
+                wsData.push(getSubtitle('▶ 산업 분류별 취업 가능성'));
+                wsData.push(['header',_this.chart2.length, ..._this.chart2.map(x => x.name)]);
+                wsData.push(['data',_this.chart2.length, ..._this.chart2.map(x => parseFloat((x.y*100).toFixed(2)))]);
+                wsData.push(rowEmpty);
+
+                wsData.push(getSubtitle('▶ 취업까지 걸린 기간별 취업 가능성'));
+                wsData.push(['header',_this.chart3.length, ..._this.chart3.map(x => x.name)]);
+                wsData.push(['data',_this.chart3.length, ..._this.chart3.map(x => parseFloat((x.y*100).toFixed(2)))]);
+                wsData.push(rowEmpty);
+                
+                wsData.push(getSubtitle('▶ 급여별 취업 가능성'));
+                wsData.push(['header',_this.chart4.length, ..._this.chart4.map(x => x.name)]);
+                wsData.push(['data',_this.chart4.length, ..._this.chart4.map(x => parseFloat((x.y*100).toFixed(2)))]);
+                wsData.push(rowEmpty);
+
+                wsData.push(getSubtitle('▶ 학점/TOEIC/자격증 영향도'));
+                wsData.push(['header',5, '구분', '희망 기업유형', '희망 산업분류', '희망 취업기간', '희망 급여']);
+                wsData.push(['header',5, '', wanted_comtype, wanted_comind, wanted_duration, wanted_salary]);
+
+                var avgarr = ['', '', '', ''];
+                var scorear = ['', '', '', ''];
+                var toeicarr = ['', '', '', ''];
+                var licarr = ['', '', '', ''];
+                if(Object.keys(nowData.wanted_comtype).length > 0){
+                    avgarr[0] = nowData.wanted_comtype.expected ? nowData.wanted_comtype.expected : '';
+                    scorear[0] = nowData.wanted_comtype.shap_gradescore ? nowData.wanted_comtype.shap_gradescore : '';
+                    toeicarr[0] = nowData.wanted_comtype.shap_toeic ? nowData.wanted_comtype.shap_toeic : '';
+                    licarr[0] = nowData.wanted_comtype.shap_license ? nowData.wanted_comtype.shap_license : '';
+                }
+                if(Object.keys(nowData.wanted_comind).length > 0){
+                    avgarr[1] = nowData.wanted_comind.expected ? nowData.wanted_comind.expected : '';
+                    scorear[1] = nowData.wanted_comind.shap_gradescore ? nowData.wanted_comind.shap_gradescore : '';
+                    toeicarr[1] = nowData.wanted_comind.shap_toeic ? nowData.wanted_comind.shap_toeic : '';
+                    licarr[1] = nowData.wanted_comind.shap_license ? nowData.wanted_comind.shap_license : '';
+                }
+                if(Object.keys(nowData.wanted_duration).length > 0){
+                    avgarr[2] = nowData.wanted_duration.expected ? nowData.wanted_duration.expected : '';
+                    scorear[2] = nowData.wanted_duration.shap_gradescore ? nowData.wanted_duration.shap_gradescore : '';
+                    toeicarr[2] = nowData.wanted_duration.shap_toeic ? nowData.wanted_duration.shap_toeic : '';
+                    licarr[2] = nowData.wanted_duration.shap_license ? nowData.wanted_duration.shap_license : '';
+                }
+                if(Object.keys(nowData.wanted_salary).length > 0){
+                    avgarr[3] = nowData.wanted_salary.expected ? nowData.wanted_salary.expected : '';
+                    scorear[3] = nowData.wanted_salary.shap_gradescore ? nowData.wanted_salary.shap_gradescore : '';
+                    toeicarr[3] = nowData.wanted_salary.shap_toeic ? nowData.wanted_salary.shap_toeic : '';
+                    licarr[3] = nowData.wanted_salary.shap_license ? nowData.wanted_salary.shap_license : '';
+                }
+                wsData.push(['data', 5, '학과 평균 취업가능성'].concat(avgarr));
+                wsData.push(['data', 5, '학점 반영 취업가능성'].concat(scorear));
+                wsData.push(['data', 5, 'TOEIC 반영 취업가능성'].concat(toeicarr));
+                wsData.push(['data', 5, '자격증 반영 취업가능성'].concat(licarr));
+                
+                var _sheet = json_to_sheet(wsData);
+                var ws = _sheet.data;
+                ws['!cols'] = _.map(rowEmpty, function (col, index) { return { wch: 20 }; });
+                ws['!merges'] = _sheet.mergesArray;
+                wb.SheetNames.push(ws_name);
+                wb.Sheets[ws_name] = ws;
+                var wbout = XLSX.write(wb, { bookType: 'xlsx', bookSST: true, type: 'binary' });
+                var _date = moment().format('YYYYMMDDHHmm');
+                saveAs(new Blob([s2ab(wbout)], { type: 'application/octet-stream' }), ws_name + '_' + _date + '.xlsx');
+              },
+              handleExport: function() {
+                if(this.isResponse) {
+                  this.excelExport();
+                }
+                else {
+                  alert('예측 후 예측 결과 저장을 진행 해주시기 바랍니다.');
+                }
+              },
+	
+          //대학타입 선택 (전문대학/대학/대학원)
+        handleUniversityType: function() {
+            var _this = this;
+            //var subCode = [];
+            if(_this.selectedUniversityType != null && _this.selectedUniversityType != 'null') {
+              _this.selectedUniversity = null;
+              var universityRawData = responseData['UNIVERSITY'];
+              
+              if(_.has(universityRawData, _this.selectedUniversityType)) {
+                var temp = _.map(getJSONArray(universityRawData[_this.selectedUniversityType]), function(item, index) {
+                  var splitCode = item.text.split('_');
+                  var unicode = splitCode[0]+'_'+splitCode[1];
+                  var uniname = item.value[1] == '본교' ? item.value[0] : item.value[0]+'('+item.value[1]+')'; 
+                  return {
+                    id: unicode,
+                    name: uniname,
+                  }
+                });
+                
+
+                _this.universitys = temp;
+              }
+              //_this.uorgcodeList = _.sortBy(subCode, 'code');
+            }
+            else {
+              //_this.uorgcodeList = _all_subCode;
+              _this.universitys = _all_university;
+              _this.selectedUniversity = null;
+              _this.uorgcode = null;
+            }
+          },
+          
+          handleLicense1: function(key) {
+            var _this = this;
+            this.license[key].selectedLicense1Text = null;
+            this.license[key].license2List= [];
+            this.license[key].selectedLicense2= null;
+            this.license[key].license3List= [];
+            this.license[key].selectedLicense3= null;
+
+            var _text = '';
+            
+            if(this.license[key].selectedLicense1) {
+              _text = this.license[key].selectedLicense1.code.split('_')[1];
+              var _result = [];
+              //arrayToObject(responseData, 'DEPARTMENT_M');
+              var _license2 = _.map(arrayToObject(responseData, 'LICENSE_M'), function(item) {return {value: item.value, text: {code: item.value, data: item.text}}})
+              if(this.license[key].selectedLicense1) {
+                _.map(this.license[key].selectedLicense1.data, function(item) {
+                  var splitItem = item.split('_');
+                  var nowData = _.find(_license2, { value : item});
+                  nowData.value = splitItem[1];
+                  
+                  _result.push(nowData);
+                })
+              }
+              this.license[key].license2List = _result;
+            }else{
+              this.license[key].license3List = _all_license;
+            }
+            setTimeout(function() {
+               _this.license[key].selectedLicense1Text = _text;
+            }, 1000);
+          },
+
+          handleLicense2: function(key) {
+            var _this = this;
+            this.license[key].selectedLicense2Text = null;
+            this.license[key].license3List= [];
+            this.license[key].selectedLicense3= null;
+            
+            var _text = '';
+
+            if(this.license[key].selectedLicense2) {
+              _text = this.license[key].selectedLicense2.code.split('_')[1];
+              var _result = [];
+              var _license3 = _.map(this.license[key].selectedLicense2.data, function(item) {
+                var splitItem = item.split('_');
+                return { name: splitItem[1],  id: splitItem[0] };
+              });
+              this.license[key].license3List = _license3;
+            }
+            else {
+              this.license[key].license3List = _all_license;
+            }
+            setTimeout(function() {
+              _this.license[key].selectedLicense2Text = _text;
+            }, 1000);
+          },
+          
+          validation: function() {
+            var result = true;
+            var message = ' 항목은 필수 항목 입니다.';
+            var vaild = '';
+            if(!this.selectedUniversity){
+            	return {result: false, message: '최종 졸업 학교를 선택하세요.', data: null};
+            }
+            var unicode = this.selectedUniversity.id.split('_');
+            var ucode = unicode[0];
+            var uorgcode = unicode[1];
+            var deptcd = this.selectedDepartmemt4;
+            var higharea = this.selectedHighschoolArea;
+            var hightype = this.selectedHighschoolType;
+            var sex = this.gender;
+            var birth = String(this.birthyear)+String(this.birthmonth).lpad(2, "0");
+            var inage = String(this.inyear)+String(this.inmonth).lpad(2, "0");
+            var outage = String(this.outyear)+String(this.outmonth).lpad(2, "0");
+            var transfer = this.transfer;
+            var teach = this.teach;
+            var oversea = this.oversea;
+            var inter = this.internship;
+            var gscore = this.gradeScore;
+            var gstandard = this.gradeScoreStandard;
+            var dncode = this.dncode;
+            var birthday = this.birthday;
+
+            if(!deptcd){
+                return {result: false, message: '졸업 학과를 선택하세요.', data: null};
+            }
+
+            if(this.toeic){
+                if(parseFloat(this.toeic)){
+                    result = true;
+                }else{
+                    return {result: false, message: '토익점수는 숫자로 입력하세요.', data: []};
+                }
+            }
+
+            if(gscore){
+                if(parseFloat(gscore)){
+                    result = true;
+                }else{
+                    return {result: false, message: '학점은 숫자로 입력하세요.', data: []};
+                }
+            }
+
+            if(gstandard){
+                if(parseFloat(gstandard)){
+                    result = true;
+                }else{
+                    return {result: false, message: '학점만점은 숫자로 입력하세요.', data: []};
+                }
+            }
+
+            if(this.licenseTotalCount){
+                if(parseFloat(this.licenseTotalCount)){
+                    result = true;
+                }else{
+                    return {result: false, message: '총 자격증 개수는 숫자로 입력하세요.', data: []};
+                }
+            }
+
+            var arrayRequired = [
+              {code: 'SCHCD', value: ucode }
+              ,{code: 'ORGCD' , value: uorgcode }
+              ,{code: 'DEPTCD'   , value: deptcd.id  }
+              ,{code: 'highschool_area' , value: higharea }
+              ,{code: 'highschool_type' , value: hightype }
+              ,{code: 'SEXCD'      , value: sex }
+              ,{code: 'birthym'   , value: birth }
+              ,{code: 'inym'   , value: inage }
+              ,{code: 'outym'   , value: outage }
+              ,{code: 'TRANSFERYM' , value: transfer }
+              ,{code: 'TEACHCERTIYN'    , value: teach }
+              ,{code: 'overseacode'  , value: oversea }
+              ,{code: 'INTERNSHIPYN'    , value: inter }
+              ,{code: 'gscore'   , value: parseFloat(gscore) }
+              ,{code: 'gstandard' , value: parseFloat(gstandard) }
+              ,{code: 'dncode' , value: dncode }
+            ];
+
+            if(!ucode) {
+              vaild = '대학교';
+            }
+            else if(!uorgcode) {
+              vaild = '본분교';
+            }
+            else if(!deptcd) {
+              vaild = '학과';
+            }
+            else if(!dncode) {
+              vaild = '주간/야간';
+            }
+            else if(!gscore) {
+                vaild = '졸업 학점';
+            }
+            else if(!gstandard) {
+                vaild = '졸업학점 만점';
+            }
+            else if(!sex) {
+                vaild = '성별';
+            }
+            else if(!higharea) {
+              vaild = '고등학교 지역';
+            }
+            else if(!hightype) {
+              vaild = '고등학교 유형'; 
+            }
+            else if(!birth) {
+                vaild = '출생년월';
+            }
+            else if(!inage) {
+              vaild = '입학년월';
+            }
+            else if(!outage) {
+              vaild = '졸업년월';
+            }
+            else if(!transfer) {
+              vaild = '편입여부';
+            }
+            else if(!teach) {
+              vaild = '교직이수여부';
+            }
+            else if(!oversea) {
+              vaild = '해외 경험 여부';
+            }
+            else if(!inter) {
+              vaild = '현장체험 여부';
+            }
+            
+
+            var data = {};
+
+            if(vaild != '') {
+                result = false;
+                message = vaild + message;
+              }
+              else {
+                if(birth > inage || birth > outage){
+                  	 message = '출생년월을 정확하게 입력하세요.'
+                       result = false;
+                }
+                else if(inage > outage){
+                 	 message = '입학년월을 정확하게 입력하세요.'
+                      result = false;
+                }
+                else {
+                  _.map(arrayRequired, function(item) {
+                    data[item.code] = item.value;
+                  })
+                }
+
+                
+             }
+
+
+            //필수 아님.
+            var toeic = this.toeic ? parseInt(this.toeic) : 0;
+            var licensecd1 = this.license[0].selectedLicense3;
+            var licensecd2 = this.license[1].selectedLicense3;
+            var licensecd3 = this.license[2].selectedLicense3;
+            var wanted_comtype = this.selectedCompanyTypeText;
+            var wanted_comind = this.selectedCompanySizeText;
+            var wanted_duration = this.wanted_duration;
+            var wanted_salary = this.wanted_salary;
+            var selectedDuration = '';
+            var selectedSalary = '';
+            
+            if(wanted_duration) {
+          	  var temp = parseFloat(wanted_duration)
+          	  if(temp <= -12){
+          		  this.selectedDurationText = '입학~졸업12개월전';
+          		  selectedDuration = 'AD';
+          	  }else if(-12 < temp && temp <= 0){
+          		this.selectedDurationText = '졸업12개월전~졸업';
+          		  selectedDuration = 'DU';
+          	  }else if(0 < temp && temp <= 3){
+          		this.selectedDurationText = '졸업~3개월';
+          		selectedDuration = 'TH';
+          	  }else if(3 < temp && temp <= 6){
+          		this.selectedDurationText = '4개월~6개월';
+          		selectedDuration = 'SI';
+          	  }else if(6 < temp && temp <= 9){
+          		this.selectedDurationText = '7개월~9개월';
+          		selectedDuration = 'NI';
+          	  }else if(9 < temp && temp <= 12){
+          		this.selectedDurationText = '10개월~12개월';
+          		selectedDuration = 'TW';
+          	  }else if(12 < temp && temp <= 24){
+          		this.selectedDurationText = '13개월~24개월';
+          		selectedDuration = 'OY';
+          	  }else{
+          		this.selectedDurationText = '입학전';
+          		selectedDuration = 'BU';
+          	  }
+            }
+            if(wanted_salary) {
+          	  var temp = parseFloat(wanted_salary)
+          	  if(temp < 179){
+          		this.selectedSalaryText = '최저임금이하';
+          		selectedSalary = 'A';
+          	  }else if(179 < temp && temp <= 200){
+          		this.selectedSalaryText = '최저임금~200만원';
+          		selectedSalary = 'B';
+          	  }else if(200 < temp && temp <= 230){
+          		this.selectedSalaryText = '200만원~230만원';
+          		selectedSalary = 'C';
+          	  }else if(230 < temp && temp <= 260){
+          		this.selectedSalaryText = '230만원~260만원';
+          		selectedSalary = 'D';
+          	  }else if(260 < temp && temp <= 290){
+          		this.selectedSalaryText = '260만원~290만원';
+          		selectedSalary = 'E';
+          	  }else if(290 < temp && temp <= 320){
+          		this.selectedSalaryText = '290만원~320만원';
+          		selectedSalary = 'F';
+          	  }else if(320 < temp && temp <= 350){
+          		this.selectedSalaryText = '320만원~350만원';
+          		selectedSalary = 'G';
+          	  }else if(350 < temp && temp <= 400){
+          		this.selectedSalaryText = '350만원~400만원';
+              	selectedSalary = 'H';
+          	  }else if(400 < temp && temp <= 500){
+          		this.selectedSalaryText = '400만원~500만원';
+          		selectedSalary = 'I';
+          	  }else{
+          		this.selectedSalaryText = '500만원 이상';
+          		selectedSalary = 'J';
+          	  }
+            }
+
+            data['TOEIC'] = toeic;
+            if(licensecd1) {
+              data['liccd1'] = licensecd1.id;
+              data['licnm1'] = licensecd1.name;
+            }
+            if(licensecd2) {
+                data['liccd2'] = licensecd2.id;
+                data['licnm2'] = licensecd2.name;
+            }
+            if(licensecd3) {
+                data['liccd3'] = licensecd3.id;
+                data['licnm3'] = licensecd3.name;
+            }
+            if(wanted_comtype) {
+              data['wanted_comtype'] = this.selectedCompanyType;
+            }
+            if(wanted_comind) {
+              data['wanted_comind'] = this.selectedCompanySize;
+            }
+            if(wanted_duration) {
+              data['wanted_duration'] = selectedDuration;
+            }
+            if(wanted_salary) {
+              data['wanted_salary'] = selectedSalary;
+            }
+            data['tcnt'] = this.licenseTotalCount ? parseInt(this.licenseTotalCount) : 0;
+            return {result: result, message: message, data: data};
+            //return {result: true, message: message, data: data};
+          },
+
+
+
+          /**
+           * @description number input 숫자체크 하는 validation function
+           * @param {*} evt 
+           * @returns bool
+           */
+          isNumber: function(evt) {
+            if(this.selectedCompany) {
+              this.companySearch = '';
+              this.selectedCompany = null;
+              this.isCompanyResultOpen = false;
+              this.companySearchResults = [];
+            }
+            evt = (evt) ? evt : window.event;
+            var charCode = (evt.which) ? evt.which : evt.keyCode;
+            if ((charCode > 31 && (charCode < 48 || charCode > 57)) && charCode !== 46) {
+              evt.preventDefault();
+            } else {
+              return true;
+            }
+          },
+          
+          handleSearchSubmit: function () {
+            
+            //this.isResponse = true;
+            var validationResult = this.validation();
+            if(!validationResult.result) {
+              alert(validationResult.message);
+              return false;
+            }
+            
+            
+            var _this = this;
+            var _data = validationResult.data;
+            _this.wantedResultTitleList1 = [];
+            _this.wantedResultTitleList2 = [];
+            _this.wantedResultList1 = [];
+            _this.wantedResultList2 = [];
+            _this.wantedResultDescList1 = [];
+            _this.wantedResultDescList2 = [];
+
+            _this.isFetching = true;
+            
+            var makeDesc = function(avg, score, toeic, license){
+            	var gradescore = (avg + score) > 100 ? (100 - avg) : (avg + score) < 0 ? -avg : score;
+            	
+            	var result = {'avg' : avg.toFixed(2), 'grade' : gradescore.toFixed(2)};
+            	if(_data['TOEIC'] !=0){
+            		var toeicscore = (avg + toeic) > 100 ? (100 - avg) : (avg + toeic) < 0 ? -avg : toeic;
+            		result['toeic'] = toeicscore.toFixed(2);
+            	}
+            	
+            	if(_data['liccd1'] || _data['liccd2'] || _data['liccd2']){
+            		var licensescore = (avg + license) > 100 ? (100 - avg) : (avg + license) < 0 ? -avg : license;
+            		result['license'] = licensescore.toFixed(2);
+            	}
+          	  
+      	      	return result;
+            }
+
+
+            var getTop3Data = function(data, keyName = '') {
+              var top3Data = data;
+              return _.map(top3Data, function(item) {
+                if(keyName != '') {
+                  if(item.name  == keyName) {
+                    item.sliced = true;
+                    item.selected = true;
+                  }
+                }
+                
+                return item;
+              })
+            }
+            if(_this.selectedCompanyTypeText){
+            	_this.wantedResultTitleList1.push('희망 기업유형');
+            	_this.wantedResultList1.push(_this.selectedCompanyTypeText);
+            }
+            if(_this.selectedCompanySizeText){
+            	_this.wantedResultTitleList1.push('희망 산업분류');
+            	_this.wantedResultList1.push(_this.selectedCompanySizeText);
+            }
+            if(_this.wanted_duration){
+            	if(_this.wantedResultTitleList1.length == 2){
+            		_this.wantedResultTitleList2.push('희망 취업기간');
+            		_this.wantedResultList2.push(_this.selectedDurationText);
+            		
+            	}else{
+            		_this.wantedResultTitleList1.push('희망 취업기간');
+            		_this.wantedResultList1.push(_this.selectedDurationText);
+            	}
+            }
+            if(_this.wanted_salary){
+            	if(_this.wantedResultTitleList1.length == 2){
+            		_this.wantedResultTitleList2.push('희망 급여');
+            		_this.wantedResultList2.push(_this.selectedSalaryText);
+            	}else{
+            		_this.wantedResultTitleList1.push('희망 급여');
+            		_this.wantedResultList1.push(_this.selectedSalaryText);
+            	}
+            }
+            $.ajax({
+              type: "GET",
+              url: "/swiss/cm/prediction.do",
+              dataType: "text",
+              data: _data,
+              beforeSend : function(xhr){
+                  xhr.setRequestHeader("username", userid);
+              },
+              success: function(data) {
+            	var result = {};
+            	if(data.startsWith('{"Result"'))
+            		result = JSON.parse(data).Result;
+            	else
+            		result = {'code': 'FAIL', 'message': data};
+                if(result.code === 'SUCCESS') {
+                  _this.predicResult = true;
+                  _this.isFetching = false;
+                  _this.isResponse = true;
+                  
+                  var responseData = JSON.parse(data).Data;
+                  _this.searchResult = responseData;
+
+                  _this.wantedResult = (Object.keys(responseData.wanted_comtype).length > 0 || Object.keys(responseData.wanted_comind).length > 0 
+                		  || Object.keys(responseData.wanted_duration).length > 0  || Object.keys(responseData.wanted_salary).length > 0 ) ? true : false;
+                  
+                  var _selectedCompanyTypeText = '';
+                  var _selectedCompanySizeText = '';
+                  var _selectedDurationText = _this.selectedDurationText;
+                  var _selectedSalaryText = _this.selectedSalaryText;
+                  if(_this.selectedCompanySize) {
+                    var temp = _.find(_this.companySizes, {value: _this.selectedCompanySize});
+                    if(temp) {
+                      _selectedCompanySizeText = temp.text;
+                    }
+                  }
+                  if(_this.selectedCompanyType) {
+                    var temp = _.find(_this.companyTypes, {value: _this.selectedCompanyType});
+                    if(temp) {
+                      _selectedCompanyTypeText = temp.text;
+                    }
+                  }
+                  _this.wantedComtypeText = _selectedCompanyTypeText;
+                  _this.wantedComindText = _selectedCompanySizeText;
+                  _this.wantedDurationText = _selectedDurationText;
+                  _this.wantedSalaryText = _selectedSalaryText;
+                  var chart1 = getColumnChartSeries(getSeriesDataAndSort(responseData.comtype, true), _selectedCompanyTypeText);
+                  _this.chart1 = chart1;
+                  //setRenderColumnChart('comtype_chart', chart1, Highcharts);
+                  setRenderPieChart2('comtype_pie_chart', getTop3Data(chart1, _selectedCompanyTypeText), Highcharts);
+
+
+                  var chart2 = getColumnChartSeries(getSeriesDataAndSort(responseData.comind, true), _selectedCompanySizeText);
+                  _this.chart2 = chart2;
+                  //setRenderColumnChart('comind_chart', chart2, Highcharts);
+                  setRenderPieChart2('comind_pie_chart', getTop3Data(chart2, _selectedCompanySizeText), Highcharts);
+
+                  
+                  var chart3 = getColumnChartSeries(getSeriesDataAndSort(responseData.duration, true), _selectedDurationText);
+                  _this.chart3 = chart3;
+                  //setRenderColumnChart('duration_chart', chart2, Highcharts);
+                  setRenderPieChart2('duration_pie_chart', getTop3Data(chart3, _selectedDurationText), Highcharts);
+
+                  
+                  var chart4 = getColumnChartSeries(getSeriesDataAndSort(responseData.salary, true), _selectedSalaryText);
+                  _this.chart4 = chart4;
+                  //setRenderColumnChart('salary_chart', chart2, Highcharts);
+                  setRenderPieChart2('salary_pie_chart', getTop3Data(chart4, _selectedSalaryText), Highcharts);
+                  if(_this.wantedResult){
+	                  for(var i=0;i<_this.wantedResultTitleList1.length;i++){
+	                	  var data = responseData.wanted_comtype;
+	                	  _this.wantedResultDescList1[i] = makeDesc(responseData.wanted_comtype.expected, responseData.wanted_comtype.shap_gradescore,
+	                			  responseData.wanted_comtype.shap_toeic, responseData.wanted_comtype.shap_license);
+	                	  if(_this.wantedResultTitleList1[i] == '희망 산업분류'){
+	                		  data = responseData.wanted_comind;
+	                		  _this.wantedResultDescList1[i] = makeDesc(responseData.wanted_comind.expected, responseData.wanted_comind.shap_gradescore,
+		                			  responseData.wanted_comind.shap_toeic, responseData.wanted_comind.shap_license);
+	                	  }else if(_this.wantedResultTitleList1[i] == '희망 취업기간'){
+	                		  data = responseData.wanted_duration;
+	                		  _this.wantedResultDescList1[i] = makeDesc(responseData.wanted_duration.expected, responseData.wanted_duration.shap_gradescore,
+		                			  responseData.wanted_duration.shap_toeic, responseData.wanted_duration.shap_license);
+	                	  }else if(_this.wantedResultTitleList1[i] == '희망 급여'){
+	                		  data = responseData.wanted_salary;
+	                		  _this.wantedResultDescList1[i] = makeDesc(responseData.wanted_salary.expected, responseData.wanted_salary.shap_gradescore,
+		                			  responseData.wanted_salary.shap_toeic, responseData.wanted_salary.shap_license);
+	                	  }
+	                	  if(_data['TOEIC'] == 0){
+	                		  delete data['shap_toeic']
+	                	  }
+	                	  if(!(_data['liccd1'] || _data['liccd2'] || _data['liccd2'])){
+	                		  delete data['shap_license']
+	                	  }
+	                	  setRenderForceChart('shap1'+i, data, Highcharts);
+	                  }
+	                  for(var i=0;i<_this.wantedResultTitleList2.length;i++){
+	                	  var data = responseData.wanted_duration;
+	                	  _this.wantedResultDescList2[i] = makeDesc(responseData.wanted_duration.expected, responseData.wanted_duration.shap_gradescore,
+	                			  responseData.wanted_duration.shap_toeic, responseData.wanted_duration.shap_license);
+	                	  if(_this.wantedResultTitleList2[i] == '희망 급여'){
+	                		  data = responseData.wanted_salary;
+	                		  _this.wantedResultDescList2[i] = makeDesc(responseData.wanted_salary.expected, responseData.wanted_salary.shap_gradescore,
+		                			  responseData.wanted_salary.shap_toeic, responseData.wanted_salary.shap_license);
+	                	  }
+	                	  if(_data['TOEIC'] == 0){
+	                		  delete data['shap_toeic']
+	                	  }
+	                	  if(!(_data['liccd1'] || _data['liccd2'] || _data['liccd2'])){
+	                		  delete data['shap_license']
+	                	  }
+	                	  setRenderForceChart('shap2'+i, data, Highcharts);
+	                  }
+                  }else{
+                	  _this.wantedResultTitleList1 = ['영향도를 산출에 필요한 충분한 데이터가 업습니다.'];
+                	  _this.wantedResultTitleList2 = [];
+                  }
+                }
+                else {
+                    alert(result.message);
+                    _this.predicResult = false;
+                    _this.isFetching = false;
+                }
+              },
+              error: function(xhr) {
+              }
+            });
+
+          },
+          /**
+           * @description 회사 조회 event
+           */
+          companySearchOnSubmit: function () {
+            
+
+            var searchText = this.companySearch;
+            if(searchText.length > 0) {
+            	var _this = this;
+            	$.ajax({
+            	    type: "GET",
+            	    url: "/swiss/cm/findCompany.do?year=all&comnm="+searchText,
+            	    dataType: "text",
+            	    async: false,
+            	    success: function (data) {
+            	      _this.companyFindResult = JSON.parse(data);
+            	    }
+            	});
+            	var comres = arrayToObject(_this.companyFindResult, 'COMNM');
+            	if(comres.length == 0){
+      	    	  alert('일치하는 이름의 회사가 없습니다.');
+                    this.selectedCompany = null;
+                    this.isCompanyResultOpen = false;
+                    this.companySearchResults = [];
+      	        }else{
+      	    	  this.isCompanyResultOpen = true;
+      	    	  this.companySearchResults = comres;
+      	        }
+            }
+            else {
+              alert('검색할 회사명을 작성 하셔야 합니다.');
+              this.selectedCompany = null;
+              this.isCompanyResultOpen = false;
+              this.companySearchResults = [];
+            }
+          },
+
+          /**
+           * @description 회사 조회 초기화.
+           */
+          companySearchInit: function () {
+            this.selectedCompany = null;
+            this.companySearch = "";
+          },
+          /**
+           * @description 회사 선택 시 발생 event 
+           * @param {*} selectValue 
+           */
+          handleSelectCompany: function (selectValue) {
+            //희망 업종 및 월급 선택 초기화.
+            this.selectedCompanySize = null;
+            this.selectedCompanySizeText = null;
+            this.selectedCompanyType = null;
+            this.selectedCompanyTypeText = null;
+            this.hopeSalary = { start: 0, end: 0 };
+
+            this.companySearch = selectValue.text;
+            this.selectedCompany = selectValue;
+            this.isCompanyResultOpen = false;
+            this.companySearchResults = [];
+
+            var _this = this;
+            var _data = {};
+            if(selectValue['value']) {
+              _data['comnm'] = selectValue['value'];
+            }
+            
+            $.ajax({
+              type: "GET",
+              url: "/swiss/cm/getCompStatus.do",
+              dataType: "text",
+              data: _data,
+              success: function (data) {
+                var responseData = JSON.parse(data);
+                if(responseData) {
+                  _this.selectedCompanyType = responseData['COMTYPE'][0];
+                  _this.selectedCompanyTypeText = responseData['COMTYPE'][0];
+                  _this.selectedCompanySize = responseData['COMIND'][0];
+                  _this.selectedCompanySizeText = responseData['COMIND'][0];
+                  _this.hopeSalary = { start: responseData['SALARY_MIN'], end: responseData['SALARY_MAX'] };
+                }
+              }
+            });
+          },
+          handleInit: function () {
+              this.licenseTotalCount= null;
+              this.isResponse= false;
+              this.predicResult = true;
+              this.wantedResult = false;
+              this.wantedResultTitleList1 = [];
+              this.wantedResultTitleList2 = [];
+              this.wantedResultList1 = [];
+              this.wantedResultList2 = [];
+              this.wantedResultDescList1 = [];
+              this.wantedResultDescList2 = [];
+              //this.isUIResponse= false;
+              this.isFetching= false;
+              //전문대학/대학/대학원
+              this.universityTypes= _universityTypes;
+              this.selectedUniversityType= null;
+
+              //대학검색
+              this.universitys=_all_university;
+              this.selectedUniversity= null;
+              
+              //전공분류
+              this.departmemt4List= [];
+              this.selectedDepartmemt4= null;
+              this.selectedDepartmemt4Text= null;
+              this.uorgcode= null;
+              this.null_value=null;
+              this.uorgcodeList= [];
+              this.dncode= 'A';
+              //편입여부
+              this.transfer= '2';
+              this.teach= '2';
+              this.oversea= 'B';
+              this.internship= '2';
+
+              //토익
+              this.toeic= null;
+              this.gradeScore= null;
+              this.gradeScoreStandard= null;
+
+              //개인신상
+              this.gender=null;
+              this.inAge=null;
+              this.outAge=null;
+              this.highschoolAreaList= arrayToObject(uiCodeRawData, 'HIGHSCHOOL_AREA');
+              this.selectedHighschoolArea= null;
+              this.highschoolTypeList= arrayToObject(uiCodeRawData, 'HIGHSCHOOL_TYPE');
+              this.selectedHighschoolType= null;
+              this.birthyear= selectedBirth;
+              this.birthmonth= 1;
+              this.inyear= selectedIndate;
+              this.inmonth= 1;
+              this.outyear= selectedOutdate;
+              this.outmonth= 1;
+             
+              
+
+              //자격증
+              this.license= [
+                {
+                  license1List: _license1,
+                  selectedLicense1: null,
+                  selectedLicense1Text: null,
+                  license2List: [],
+                  selectedLicense2: null,
+                  selectedLicense2Text: null,
+                  license3List: _all_license,
+                  selectedLicense3: null,
+                  selectedLicense3Text: null,
+                },
+                {
+                  license1List: _license1,
+                  selectedLicense1: null,
+                  selectedLicense1Text: null,
+                  license2List: [],
+                  selectedLicense2: null,
+                  selectedLicense2Text: null,
+                  license3List: _all_license,
+                  selectedLicense3: null,
+                  selectedLicense3Text: null,
+                },
+                {
+                  license1List: _license1,
+                  selectedLicense1: null,
+                  selectedLicense1Text: null,
+                  license2List: [],
+                  selectedLicense2: null,
+                  selectedLicense2Text: null,
+                  license3List: _all_license,
+                  selectedLicense3: null,
+                  selectedLicense3Text: null,
+                }
+              ];
+
+              //희망업종
+              this.companySizes= arrayToObject(uiCodeRawData, 'COMIND');
+              this.selectedCompanySize= null;
+              this.selectedCompanySizeText= null;
+              this.companyTypes= arrayToObject(uiCodeRawData, 'COMTYPE');
+              this.selectedCompanyType= null;
+              this.selectedCompanyTypeText= null;
+              this.wanted_duration= null;
+              this.selectedDurationText= null;
+              this.wanted_salary= null;
+              this.selectedSalaryText= null;
+              this.selectedDurationText = null;
+              this.selectedSalaryText = null;
+
+              this.companyList= arrayToObject(uiCodeRawData, 'COMNM');
+              this.companySearch= '';
+              this.companySearchResults= [];
+              this.isCompanyResultOpen= false;
+              this.selectedCompany= null;
+              this.searchResult= null;
+            },
+        },      
+        created(){
+          this.isUIResponse = true;
+                
+        },
+        watch: {
+        	selectedUniversity: function(val) {
+                if(val) {
+                	var unidept = responseData['UNI_DEPT'][this.selectedUniversity.id];
+                	  var temp = _.map(unidept, function(item, index) {
+                		  var splitCode = item.split('_');
+                		  return {
+                              id: splitCode[0],
+                              name: splitCode[1],
+                          }
+                	  });
+                	this.department4 = temp;
+                }
+                else {
+                  this.department4 = [];
+                  this.selectedDepartmemt4 = null;
+                }
+              },
+          isUIResponse: function(val) {
+            if(val) {
+              $('#module0').waitMe('hide');
+            }
+            else {
+              run_waitMe($('#module0'), 1, 'bounce');
+            }
+          },
+          isFetching: function(val) {
+            var loading = 'bounce';
+            if(val) {
+              run_waitMe($('#wrap_container'), 2, loading, "1");
+            }
+            else {
+              $('#wrap_container').waitMe('hide');
+            }
+          },
+          selectedDepartmemt4: function(val) {
+            this.selectedDepartmemt4Text = null;
+            if(val) {
+              var _find = _.find(this.departmemt4List, {text: val});
+              if(_find) {
+                setTimeout(() => {
+                  this.selectedDepartmemt4Text = _find.value;
+                }, 100);
+              }
+            }
+          },
+          selectedCompanyType: function(val) {
+            this.selectedCompanyTypeText = null;
+            if(val) {
+              var _find = _.find(this.companyTypes, {value: val});
+              if(_find) {
+                setTimeout(() => {
+                  this.selectedCompanyTypeText = _find.text;
+                }, 100);
+              }
+            }
+          },
+          selectedCompanySize: function(val) {
+            this.selectedCompanySizeText = null;
+            if(val) {
+              var _find = _.find(this.companySizes, {value: val});
+              if(_find) {
+                setTimeout(() => {
+                  this.selectedCompanySizeText = _find.text;
+                }, 100);
+              }
+            }
+          },
+          license: {
+            deep: true,
+            handler(val) {
+              _this = this;
+              _.map(val, function(item, index) {
+                if(item.selectedLicense3 != null) {
+                  setTimeout(() => {
+                    _this.license[index].selectedLicense3Text = item.selectedLicense3.name;  
+                  }, 1000);
+                }
+                else {
+                  _this.license[index].selectedLicense3Text = null;
+                }
+              });
+            }
+          }
+
+        }
+      });
+      // }
+      // else {
+      //   alert(result.message);
+      // }
+
+    },
+  });
+});

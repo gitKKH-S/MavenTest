@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdFormVerificationMapper">
+
+	<select id="listVerify" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT VERINO
+			,SURVKINDCD
+			,DIVISION
+			,TARGET
+			,SUBJECT
+			,MESSAGE
+		FROM TMAD_VERIINFO 
+		WHERE SURVKINDCD = #{SURVKINDCD}
+		AND DIVISION = #{DIVISION}
+	</select>
+	
+	<insert id="procVerify" statementType="CALLABLE" parameterType="java.util.Map"> 
+		{ CALL SP_VERIFY_AG_PR(#{SURVSEQ},#{SURVKINDCD},#{VERINO}) } 
+	</insert>	
+	
+	<insert id="procVerifyFP" statementType="CALLABLE" parameterType="java.util.Map"> 
+		{ CALL SP_VERIFY_FP_PR(#{SURVSEQ},#{SURVKINDCD},#{VERINO}) } 
+	</insert>
+		
+	<insert id="procVerifyGP" statementType="CALLABLE" parameterType="java.util.Map"> 
+		{ CALL SP_VERIFY_GP_PR(#{SURVSEQ},#{SURVKINDCD},#{VERINO}) } 
+	</insert>
+			
+	<select id="listVeriRst" parameterType="java.util.Map" resultType="java.util.Map">
+		<if test="list.size != 0">
+		    SELECT 
+			    A.SEQ
+				,A.SURVSEQ
+				,A.SURVKINDCD
+				,A.SCHCD
+				,B.SCHNM
+				,A.ORGCD
+				,D.CDNM AS ORGNM
+				,A.DEPTCD
+				,C.DEPTNM
+				,A.STUDENTNO
+				,A.VERINO
+				,A.COLUMN_NAME
+				,A.COLUMN_INFO
+				,E.SUBJECT
+				,E.MESSAGE
+			FROM TMAD_VERIRST A, TMAD_SCHOOL B, TMCM_DEPT C, TCCM_CODE D,TMAD_VERIINFO E
+			WHERE	
+				<foreach collection="list" item="k" index='index' separator=" ">
+					<if test='index == 0 '> 
+					A.SURVSEQ = #{k.SURVSEQ}
+					AND A.SURVKINDCD = #{k.SURVKINDCD}
+					</if>
+				</foreach>
+				AND A.SURVSEQ = B.SURVSEQ
+				AND A.SURVKINDCD = B.SURVKINDCD
+				AND A.SCHCD = B.SCHCD
+				AND A.ORGCD = B.ORGCD
+				AND A.SURVSEQ = C.SURVSEQ(+)
+				AND A.SURVKINDCD = C.SURVKINDCD(+)
+				AND A.DEPTCD = C.DEPTCD(+)
+				AND A.SURVSEQ = D.SURVSEQ(+)
+				AND A.SURVKINDCD = D.SURVKINDCD(+)
+				AND '1001' = D.CDTYPE(+)
+				AND A.ORGCD = D.CD(+)
+				AND A.VERINO = E.VERINO
+				AND A.SURVKINDCD = E.SURVKINDCD
+				AND A.VERINO IN 
+		    <foreach collection="list" item="i" open="(" close=")" separator=",">	
+					#{i.VERINO}
+		    </foreach>
+		    	 
+	    </if>
+	</select>	
+	
+</mapper>

@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AgConfigMapper">
+
+	<update id="updateChgpsnyn" parameterType="java.util.Map">
+			UPDATE TMAD_USERSCHOOL SET CHGPSNYN = #{CHGPSNYN}
+				,MODIFIERID = #{WORKERID}, MODDTHM = sysdate 
+			 WHERE 					 
+				SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND USERID = #{USERID}			
+	</update>		
+		
+	<update id="updateEvddockind" parameterType="java.util.Map">
+			UPDATE TMAD_USERSCHOOL SET EVDDOCKIND = #{EVDDOCKIND}
+				,MODIFIERID = #{WORKERID}, MODDTHM = sysdate
+			 WHERE 					 
+				SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND USERID = #{USERID}			
+	</update>
+	
+	<update id="updateEmptyToTmp" parameterType="java.util.Map">
+			MERGE INTO TMAD_SCHOOL_OPT S
+		    USING DUAL 
+		       ON ( S.SURVSEQ = #{SURVSEQ} AND S.SURVKINDCD=#{SURVKINDCD} AND S.SCHCD=#{SCHCD} AND S.ORGCD=#{ORGCD} AND S.OPTNAME=#{OPTNAME} )
+		    WHEN MATCHED THEN
+		        UPDATE SET S.OPTVALUE = #{OPTVALUE}
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.SURVSEQ, S.SURVKINDCD, S.SCHCD, S.ORGCD, S.OPTNAME, S.OPTVALUE ) 
+		        VALUES (#{SURVSEQ}, #{SURVKINDCD}, #{SCHCD}, #{ORGCD}, #{OPTNAME}, #{OPTVALUE})	
+	</update>
+		
+	<update id="deleteEvddoc" parameterType="java.util.Map">
+			DELETE FROM TMAG_EVDDOC 
+			 WHERE 					 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}		
+	</update>	
+	
+	<insert id="updateMntr" parameterType="java.util.Map" >
+		<selectKey resultType="int" keyProperty="seq" order="BEFORE">
+	        SELECT NVL(MAX(MNTRSEQ),0)+1 FROM TMAD_SURVMNTR  WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD =  #{SURVKINDCD} AND SCHCD = #{SCHCD} AND ORGCD =  #{ORGCD}       
+	    </selectKey> 		
+			MERGE INTO TMAD_SURVMNTR S
+		    USING DUAL 
+		       ON (S.SURVSEQ = #{SURVSEQ} AND S.SURVKINDCD = #{SURVKINDCD}
+		       		AND S.SCHCD = #{SCHCD} AND S.ORGCD = #{ORGCD}
+		       		AND S.STATUSCD = #{STATUSCD} 
+		       )
+		    WHEN MATCHED THEN
+		        UPDATE SET S.WORKERID = #{WORKERID}
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.SURVSEQ,S.SURVKINDCD,S.SCHCD,S.ORGCD,S.MNTRSEQ,S.STATUSCD,S.STATUSWKDTHM,S.RCEPTCN,S.ATT_IDT_NO,S.ATT_SEQ,S.WORKERID,S.WORKDTHM) 
+		        VALUES (#{SURVSEQ},#{SURVKINDCD},#{SCHCD},#{ORGCD},#{seq},#{STATUSCD},SYSDATE,NULL,NULL,NULL,#{WORKERID},SYSDATE)			
+	</insert>
+		
+	<update id="updatePrgStatus" parameterType="java.util.Map">
+			UPDATE TMAD_DEPTUSER T1 SET PRGSTATUSCD = '1'
+					,MODIFIERID = #{WORKERID}, MODDTHM = sysdate 
+			 WHERE 
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}							
+	</update>
+		
+	<insert id="insertDeptUser" parameterType="java.util.Map">
+			INSERT INTO TMAD_DEPTUSER 
+		    (SURVSEQ,SURVKINDCD,USERID,SCHCD,ORGCD,COLCD,DEPTCD,DETAILDEPTNM,DNCD,PRGSTATUSCD,PRGSTATUSDTHM,WORKERID,WORKDTHM,MODIFIERID,MODDTHM,INFOSMSSENDYN )
+		    VALUES (#{SURVSEQ},#{SURVKINDCD},#{USERID},#{SCHCD},#{ORGCD},#{COLCD},#{DEPTCD},#{DETAILDEPTNM},#{DNCD},'1',SYSDATE,#{WORKERID},SYSDATE,#{WORKERID},SYSDATE,#{INFOSMSSENDYN} )
+	</insert>
+	
+	<delete id="deleteAllDeptUser" parameterType="java.util.Map">
+			DELETE FROM TMAD_DEPTUSER T1 
+			 WHERE 
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}		
+	</delete>		
+
+	<update id="updateSmsSendYn" parameterType="java.util.Map">
+			UPDATE TMAD_DEPTUSER T1 SET INFOSMSSENDYN = '1', PRGSTATUSCD = '2', PRGSTATUSDTHM = SYSDATE
+					,MODIFIERID = #{WORKERID}, MODDTHM = sysdate 
+			 WHERE 
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}	
+				/*단과대별, 학과별 담당자가 동일인일경우 안내메일전송여부 전부 변경 2021-03-09*/
+				AND T1.USERID = #{USERID}							
+	</update>
+	
+	<delete id="deleteDeptUser" parameterType="java.util.Map">
+			DELETE FROM TMAD_DEPTUSER T1
+			 WHERE 
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}	
+				AND T1.COLCD = #{COLCD}
+				AND T1.DEPTCD = #{DEPTCD}
+				AND T1.DETAILDEPTNM = #{DETAILDEPTNM}
+				AND T1.DNCD = #{DNCD}							
+	</delete>
+		
+    <delete id="deleteKediUser" parameterType="java.util.Map">
+    		DELETE TMAD_USER 
+			WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND USERID = #{USERID}
+				AND USERGRPTYPE ='6'
+				AND USERID NOT IN ( SELECT USERID FROM TMAD_DEPTUSER WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND USERID = #{USERID}
+				 )
+    </delete>			
+
+    <delete id="deleteKediAllUser" parameterType="java.util.Map">
+    		DELETE TMAD_USER 
+			WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+				AND USERGRPTYPE ='6'  
+    </delete>	
+    
+    <update id="updateKediUser" parameterType="java.util.Map">
+			UPDATE TMAD_USER SET
+				USERNM = SP_ENC_FU(#{USERNM})
+				,MOBILENO = SP_ENC_FU(#{MOBILENO})
+				,EMAILADDR = SP_ENC_FU(#{EMAILADDR})
+				,MODIFIERID = #{WORKERID}, MODDTHM = sysdate
+			WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND USERID = #{USERID}
+				AND USERGRPTYPE ='6' 
+    </update>
+    
+	<select id="listDeptUser" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T4.SURVSEQ ,
+				T4.SURVKINDCD ,
+				T2.USERID,
+				T4.SCHCD ,
+				T4.SCHNM,
+				T4.ORGCD ,
+				SP_CODENAME_FU(T4.SURVSEQ, T4.SURVKINDCD,'1001', T4.ORGCD) AS ORGNM,
+				T4.COLCD ,
+				T4.COLNM,
+				T4.DEPTCD ,
+				T4.DEPTNM,
+				NVL(T4.DETAILDEPTNM,T4.DEPTNM ) AS DETAILDEPTNM ,
+				T4.DNCD ,
+				SP_CODENAME_FU(T4.SURVSEQ, T4.SURVKINDCD,'1004', T4.DNCD) AS DNNM,
+				T4.PRGSTATUSCD ,
+				T4.PRGSTATUSDTHM ,
+				DECODE(T2.WORKYN,'1',SP_DEC_FU(T2.USERNM),'') AS USERNM ,
+				DECODE(T2.WORKYN,'1',SP_DEC_FU(T2.MOBILENO),'') AS MOBILENO ,
+				DECODE(T2.WORKYN,'1',SP_DEC_FU(T2.EMAILADDR),'') AS EMAILADDR,
+				NVL(CASE WHEN T2.PASSWD IS NOT NULL THEN '1' ELSE '2' END,'2') AS ISPASSWD,
+				NVL(T4.INFOSMSSENDYN,'2') AS INFOSMSSENDYN,
+				DECODE(NVL(T2.PASSWDDIFFCNT,0), 0, '-', 1, '-', 2, '-', 3, '-', 4, '-', '잠김') AS PASSWDDIFFCNT
+			FROM
+				(
+				SELECT
+					T3.SURVSEQ ,T5.SCHNM,T3.DEPTNM , T3.SURVKINDCD ,T1.USERID , T3.SCHCD , T3.ORGCD , T3.COLCD ,T3.COLNM , T3.DEPTCD , T3.DETAILDEPTNM , T3.DNCD ,T1.INFOSMSSENDYN, T1.PRGSTATUSCD , T1.PRGSTATUSDTHM
+				FROM
+					TMAD_DEPTUSER T1, TMAD_SCHOOL T5, (
+					SELECT
+						T1.SURVSEQ , T1.SURVKINDCD , SCHCD , ORGCD , COLCD,COLNM,DEPTNM , DEPTCD , DETAILDEPTNM , DNCD
+					FROM
+						TMAG_ATRGRDINFOBF T1
+					WHERE
+						T1.SURVSEQ = #{SURVSEQ}
+						AND T1.SURVKINDCD = #{SURVKINDCD}
+						AND T1.SCHCD = #{SCHCD}
+						AND T1.ORGCD = #{ORGCD}
+					GROUP BY
+						SURVSEQ, SURVKINDCD, SCHCD, ORGCD, COLCD,COLNM,DEPTNM, DEPTCD, DETAILDEPTNM, DNCD ) T3
+				WHERE
+					T3.SURVSEQ = T1.SURVSEQ(+)
+					AND T3.SURVKINDCD = T1.SURVKINDCD(+)
+					AND T3.SCHCD = T1.SCHCD(+)
+					AND T3.ORGCD = T1.ORGCD(+)
+					AND T3.COLCD = T1.COLCD(+)
+					AND T3.DEPTCD = T1.DEPTCD(+)
+					AND T3.DETAILDEPTNM = T1.DETAILDEPTNM(+)
+					AND T3.DNCD = T1.DNCD(+) 
+					AND T3.SURVSEQ = T5.SURVSEQ
+					AND T3.SURVKINDCD = T5.SURVKINDCD
+					AND T3.SCHCD = T5.SCHCD
+					AND T3.ORGCD = T5.ORGCD
+			) T4 ,
+				TMAD_USER T2
+			WHERE T4.USERID = T2.USERID(+)
+			<if test="USERNM != null">
+				AND SP_DEC_FU(T2.USERNM) like '%'|| #{USERNM} ||'%'
+			</if>				
+			<if test='ISDEPT == "1"'> 	
+				AND T4.USERID IS NULL
+			</if>
+				AND T2.USERGRPTYPE(+) ='6' 
+			ORDER BY T4.DEPTNM 				
+	</select>	
+	
+    <update id="updateNewPwd" parameterType="java.util.Map">
+			UPDATE TMAD_USER SET
+				PASSWD = SP_PWENC_FU(#{PASSWD}) 
+				,ORIPASSWDYN = '1'
+				,PASSWDDIFFCNT = 0
+				,MODIFIERID = #{WORKERID}
+		        ,MODDTHM = SYSDATE
+			WHERE USERID = #{USERID}
+				AND USERGRPTYPE ='6' 
+    </update>
+    
+    <update id="clearAuthFailCnt" parameterType="java.util.Map">	
+			UPDATE TMAD_USER
+				set	PASSWDDIFFCNT = 0
+				WHERE  USERID = #{USERID}
+	</update>	
+    
+	<select id="selectDeptUseridDubChk" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT T2.USERID 
+		FROM TMAD_DEPTUSER T2
+		WHERE
+			T2.SURVSEQ = #{SURVSEQ}
+			AND T2.SURVKINDCD = #{SURVKINDCD}
+			AND( T2.SCHCD !=  #{SCHCD}
+			OR T2.ORGCD != #{ORGCD} )
+			AND T2.USERID IN (
+				SELECT T1.USERID
+				FROM TMAD_DEPTUSER T1
+				WHERE
+					T1.SURVSEQ = #{SURVSEQ}
+					AND T1.SURVKINDCD = #{SURVKINDCD}
+					AND T1.SCHCD =  #{SCHCD}
+					AND T1.ORGCD = #{ORGCD}
+				GROUP BY T1.USERID )
+		GROUP BY T2.USERID 
+	</select>
+
+	<select id="selectUseridDubChk" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T1.USERID			
+			FROM TMAD_DEPTUSER T1, TMAD_USER T2
+			WHERE T1.SURVSEQ = #{SURVSEQ} AND T1.SURVKINDCD = #{SURVKINDCD}
+		    AND T1.SCHCD = #{SCHCD} AND T1.ORGCD = #{ORGCD}
+		    AND T1.USERID = T2.USERID	
+			AND ( T2.USERGRPTYPE = '4'
+				OR NOT ( T2.SURVSEQ = #{SURVSEQ} 
+				AND T2.SURVKINDCD = #{SURVKINDCD}
+		    	AND T2.SCHCD = #{SCHCD} 
+		    	AND T2.ORGCD = #{ORGCD}))
+			GROUP BY T1.USERID
+	</select>
+	
+	<select id="selectOneUseridDubChk" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T2.USERID			
+			FROM TMAD_USER T2
+			WHERE T2.USERID = #{USERID}
+			AND (T2.USERGRPTYPE = '4'
+				OR  NOT ( T2.SURVSEQ = #{SURVSEQ} 
+				AND T2.SURVKINDCD = #{SURVKINDCD}
+		    	AND SUBSTR(T2.SCHCD,0,5)  = SUBSTR(#{SCHCD},0,5)
+		    	AND T2.ORGCD = #{ORGCD}))
+				
+	</select>	
+	
+	<insert id="mergeDeptUser" parameterType="java.util.Map">
+			MERGE INTO TMAD_DEPTUSER S
+		    USING DUAL
+		       ON (S.SURVSEQ = #{SURVSEQ} AND S.SURVKINDCD = #{SURVKINDCD}
+		       		AND S.USERID = #{USERID} AND S.SCHCD = #{SCHCD}
+		       		AND S.ORGCD = #{ORGCD} AND S.COLCD = #{COLCD}
+		       		AND S.DEPTCD = #{DEPTCD} AND S.DETAILDEPTNM = #{DETAILDEPTNM}
+		       		AND S.DNCD = #{DNCD} )
+		    WHEN MATCHED THEN
+		        UPDATE SET S.MODIFIERID = #{WORKERID}
+		        			,S.MODDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.SURVSEQ,S.SURVKINDCD,S.USERID,S.SCHCD,S.ORGCD,S.COLCD,S.DEPTCD,S.DETAILDEPTNM,S.DNCD,S.PRGSTATUSCD,S.PRGSTATUSDTHM,S.WORKERID,S.WORKDTHM,S.MODIFIERID,S.MODDTHM ) 
+		        VALUES (#{SURVSEQ},#{SURVKINDCD},#{USERID},#{SCHCD},#{ORGCD},#{COLCD},#{DEPTCD},#{DETAILDEPTNM},#{DNCD},'1',SYSDATE,#{WORKERID},SYSDATE,#{WORKERID},SYSDATE )
+	</insert>	
+	
+	<insert id="mergeUser" parameterType="java.util.Map">
+			MERGE INTO TMAD_USER S
+		    USING DUAL 
+		       ON (S.USERID = #{USERID})
+		    WHEN MATCHED THEN
+		        UPDATE SET S.USERNM = SP_ENC_FU(#{USERNM})
+		        			,S.MOBILENO = SP_ENC_FU(#{MOBILENO})
+		        			,S.EMAILADDR = SP_ENC_FU(#{EMAILADDR})
+		        			,S.WORKYN = '1'
+		        			,MODIFIERID = #{WORKERID}
+		        			,MODDTHM = SYSDATE
+		    WHEN NOT MATCHED THEN
+		        INSERT (S.USERID,S.USERGRPTYPE,S.USERNM,S.PASSWD,S.DEPTNM,S.MOBILENO,S.EMAILADDR,S.SMSYN,S.WORKYN,S.ORIPASSWDYN,S.SURVSEQ,S.SURVKINDCD,S.SCHCD,S.ORGCD,S.WORKERID,S.WORKDTHM ) 
+		        VALUES (#{USERID},'6',SP_ENC_FU(#{USERNM}), SP_PWENC_FU(#{PASSWD}),NULL,SP_ENC_FU(#{MOBILENO}),SP_ENC_FU(#{EMAILADDR}),#{SMSYN},'1','1',#{SURVSEQ},#{SURVKINDCD},#{SCHCD},#{ORGCD},#{WORKERID},SYSDATE )
+		        
+	</insert>    
+	    
+	<select id="getTmp" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				OPTNAME
+				,OPTVALUE
+			FROM
+				TMAD_SCHOOL_OPT
+			WHERE 
+				SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+	</select>	
+		    
+    <update id="updateTrag" parameterType="java.util.Map">
+		UPDATE 
+			TRAG_ATRGRDINFO 
+		SET
+			<if test='OPTVALUE == "1"'>
+			JOBTYPECD=DECODE(JOBTYPECD,null,'30', JOBTYPECD)
+			</if>
+			<if test='OPTVALUE != "1"'>
+			JOBTYPECD=DECODE(JOBTYPECD,'30',null, JOBTYPECD)
+			</if>			
+			, SAVEERRORCD ='4'
+		WHERE SURVSEQ = #{SURVSEQ}
+			AND SURVKINDCD = #{SURVKINDCD}
+			AND SCHCD = #{SCHCD}
+			AND ORGCD = #{ORGCD}		
+	</update>
+	
+	<select id="selectTragNo" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(SURVSEQ) CNT 
+		  FROM TRAG_ATRGRDINFO
+		 WHERE SURVSEQ = #{SURVSEQ}
+		   AND SURVKINDCD = #{SURVKINDCD}
+		   AND SCHCD = #{SCHCD}
+		   AND ORGCD = #{ORGCD}
+	</select>		    
+</mapper>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SwissSymAthDQM01">
+	
+	<select id="selectUserGrpSearch" parameterType="java.util.Map" resultType="java.util.Map">
+            SELECT A.USER_GRP_ID
+                 , A.USER_GRP_NM
+                 , COUNT(B.USER_ID) USER_CNT
+                 , A.USER_GRP_ATT
+                 , A.USE_YN 
+              FROM SGGHUSGR00TT A, SGSYUSER00TT B
+             WHERE 1=1
+               AND A.USER_GRP_ID = B.USER_GB(+)
+               AND NVL(A.USER_GRP_NM,' ') LIKE #{USER_GRP_NM}||'%'
+          GROUP BY A.USER_GRP_ID
+                 , A.USER_GRP_NM
+                 , A.USER_GRP_ATT
+                 , A.USE_YN
+          ORDER BY A.USER_GRP_NM
+	</select>
+	
+	<select id="selectUserGrpMenu" parameterType="java.util.Map" resultType="java.util.Map">
+            SELECT #{USER_GRP_ID} AS USER_GRP_ID, A.SYSTEM_ID, A.MENU_ID, A.PAGE_ID, A.MENU_NM, A.MENU_LEVEL, A.MENU_SEQ, A.UP_MENU_ID, A.USE_YN
+                 , CASE WHEN B.MENU_ID IS NULL THEN 0 ELSE 1 END AS KEY
+			  FROM SGGHPGMN00TT A, (SELECT * FROM SGGHUGRD00TT WHERE USER_GRP_ID = #{USER_GRP_ID}) B
+			 WHERE 1=1
+			   AND A.SYSTEM_ID = B.SYSTEM_ID(+)
+			   AND A.MENU_ID = B.MENU_ID(+)
+			 START WITH A.UP_MENU_ID IS NULL
+		   CONNECT BY PRIOR A.MENU_ID = A.UP_MENU_ID
+			 ORDER SIBLINGS BY A.MENU_SEQ
+	</select>
+
+	<insert id="saveUserGrpPageMenu" parameterType="java.util.Map">
+		<if test="KEY == 1">
+			INSERT INTO SGGHUGRD00TT (USER_GRP_ID, SYSTEM_ID, MENU_ID, UPDATE_MAN, UPDATE_DT)
+			VALUES(#{USER_GRP_ID}, #{SYSTEM_ID}, #{MENU_ID}, 'system', SYSDATE)
+		</if>
+		<if test="KEY == 0">
+			DELETE FROM SGGHUGRD00TT
+			 WHERE USER_GRP_ID = #{USER_GRP_ID}
+			   AND SYSTEM_ID = #{SYSTEM_ID}
+			   AND MENU_ID = #{MENU_ID}
+		</if>
+    </insert>
+
+    <delete id="deleteUserGrp" parameterType="java.util.Map">
+         	DELETE FROM SGGHUSGR00TT
+        	 WHERE USER_GRP_ID = #{USER_GRP_ID}
+    </delete>	
+    
+</mapper>

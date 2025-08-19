@@ -1,0 +1,694 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="GPbaseReMapper">
+	
+	
+	<!-- 졸업자 일반대학 학과대상 목록 가져옴.... -->
+	<select id="selectGpDeptList" parameterType="java.util.Map" resultType="java.util.Map">
+
+  			SELECT ROW_NUMBER() OVER(ORDER BY A.COLCDNM, A.DEPTNM, A.DEPTDNCD) AS "ROWNUM"
+                 , SURVSEQ 
+                 , SURVKINDCD
+                 , SCHCD
+                 , ORGCD
+                 , COLCD
+                 , COLCDNM
+                 , DEPTCD
+                 , DEPTNM
+                 , DEPTDNCD
+                 , DEPTDNNM
+                 , MOECLASS
+                 , GRADCNT
+                 , GRADCNTF
+                 , GRADCNTM
+                 , MSTGRADCNT
+                 , MSTGRADCNTF
+                 , MSTGRADCNTM
+                 , DRGRADCNT
+                 , DRGRADCNTF
+                 , DRGRADCNTM
+                 , GRADCNT2
+                 , GRADCNTF2
+                 , GRADCNTM2
+                 , MSTGRADCNT2
+                 , MSTGRADCNTF2
+                 , MSTGRADCNTM2
+                 , DRGRADCNT2
+                 , DRGRADCNTF2
+                 , DRGRADCNTM2
+                 , GRADCNT8
+                 , GRADCNTF8
+                 , GRADCNTM8
+                 , MSTGRADCNT8
+                 , MSTGRADCNTF8
+                 , MSTGRADCNTM8
+                 , DRGRADCNT8
+                 , DRGRADCNTF8
+                 , DRGRADCNTM8
+                 , DECODE(STATUSCD,'4',STATUSWKDTHM,'6',STATUSWKDTHM,'7',STATUSWKDTHM,'8',STATUSWKDTHM,'9',STATUSWKDTHM,'11',STATUSWKDTHM,'12',STATUSWKDTHM,'') AS STATUSWKDTHM
+                 , MDGRADCNT
+                 , MDGRADCNTF
+                 , MDGRADCNTM
+                 , MDGRADCNT2
+                 , MDGRADCNTF2
+                 , MDGRADCNTM2
+                 , MDGRADCNT8
+                 , MDGRADCNTF8
+                 , MDGRADCNTM8                 
+              FROM (
+                    SELECT A.SURVSEQ 
+                         , A.SURVKINDCD
+                         , A.SCHCD
+                         , A.ORGCD
+                         , A.COLCD
+                         , B.COLNM COLCDNM
+                         , A.DEPTCD
+                         , (SELECT DEPTNM FROM TMCM_DEPT WHERE  SURVSEQ = #{SURVSEQ} AND SURVKINDCD = #{SURVKINDCD}  AND DEPTCD = A.DEPTCD ) DEPTNM
+                         , A.DEPTDNCD
+                         , SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', A.DEPTDNCD) AS DEPTDNNM
+                         , A.MOECLASS
+                         , A.GRADCNT
+                         , A.GRADCNTF
+                         , A.GRADCNTM
+                         , A.MSTGRADCNT
+                         , A.MSTGRADCNTF
+                         , A.MSTGRADCNTM
+                         , A.DRGRADCNT
+                         , A.DRGRADCNTF
+                         , A.DRGRADCNTM
+                         , A.GRADCNT2
+                         , A.GRADCNTF2
+                         , A.GRADCNTM2
+                         , A.MSTGRADCNT2
+                         , A.MSTGRADCNTF2
+                         , A.MSTGRADCNTM2
+                         , A.DRGRADCNT2
+                         , A.DRGRADCNTF2
+                         , A.DRGRADCNTM2
+                         , A.GRADCNT8
+                         , A.GRADCNTF8
+                         , A.GRADCNTM8
+                         , A.MSTGRADCNT8
+                         , A.MSTGRADCNTF8
+                         , A.MSTGRADCNTM8
+                         , A.DRGRADCNT8
+                         , A.DRGRADCNTF8
+                         , A.DRGRADCNTM8
+                         , ( SELECT SURVPROSTATUSCD  FROM TMAD_SCHOOL WHERE SCHCD = A.SCHCD AND ORGCD = A.ORGCD AND SURVSEQ = A.SURVSEQ AND SURVKINDCD = A.SURVKINDCD ) AS STATUSCD   
+                         , ( SELECT MAX(STATUSWKDTHM) AS STATUSWKDTHM  FROM TMAD_SURVMNTR WHERE SCHCD = A.SCHCD AND ORGCD = A.ORGCD AND SURVSEQ = A.SURVSEQ AND SURVKINDCD = A.SURVKINDCD AND STATUSCD = 4 ) STATUSWKDTHM
+                         , (A.MSTGRADCNT + A.DRGRADCNT) AS MDGRADCNT
+                         , (A.MSTGRADCNTF + A.DRGRADCNTF) AS MDGRADCNTF
+                         , (A.MSTGRADCNTM + A.DRGRADCNTM) AS MDGRADCNTM
+                         , (A.MSTGRADCNT2 + A.DRGRADCNT2) AS MDGRADCNT2
+                         , (A.MSTGRADCNTF2 + A.DRGRADCNTF2) AS MDGRADCNTF2
+                         , (A.MSTGRADCNTM2 + A.DRGRADCNTM2) AS MDGRADCNTM2
+                         , (A.MSTGRADCNT8 + A.DRGRADCNT8) AS MDGRADCNT8
+                         , (A.MSTGRADCNTF8 + A.DRGRADCNTF8) AS MDGRADCNTF8
+                         , (A.MSTGRADCNTM8 + A.DRGRADCNTM8) AS MDGRADCNTM8                         
+                      FROM TMGP_GRDPSNCNT A, TMCM_COL B
+                     WHERE A.SCHCD =  #{SCHCD} 
+                       AND A.ORGCD = #{ORGCD}
+                       AND A.SURVSEQ = #{SURVSEQ}
+                       AND A.SURVKINDCD = #{SURVKINDCD}
+                       AND A.SURVSEQ = B.SURVSEQ 
+                       AND A.SURVKINDCD = B.SURVKINDCD 
+                       AND A.COLCD = B.COLCD 
+                        <if test='sel_dept != null and sel_dept != ""'>
+                            AND DEPTCD IN (  SELECT  DEPTCD FROM TMCM_DEPT  WHERE   SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND UPPER(DEPTNM) LIKE UPPER('%' || #{sel_dept} || '%') )
+                        </if>               
+                        <if test='sel_dayNight != null and sel_dayNight != ""'>
+                            AND DEPTDNCD =   #{sel_dayNight}
+                        </if>
+                   ) A
+
+	</select>
+	
+				<!-- 졸업자 일반대학 학과대상 목록 가져옴.... -->
+	<select id="selectGpDeptListVerify" parameterType="java.util.Map" resultType="java.util.Map">
+
+		SELECT 
+                         A.SURVSEQ 
+                         , A.SURVKINDCD
+                         , A.SCHCD
+                         , A.ORGCD
+                         , A.COLCD
+                         , A.COLNM AS COLCDNM
+                         , A.DEPTCD
+                         , A.DEPTNM
+                         , A.DEPTDNCD
+                         , MAX( SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', A.DEPTDNCD) ) AS DEPTDNNM
+                         , sum(A.GRADCNT) GRADCNT
+                         , sum(A.GRADCNTF) GRADCNTF
+                         , sum(A.GRADCNTM) GRADCNTM
+                         , sum(A.MSTGRADCNT) MSTGRADCNT
+                         , sum(A.MSTGRADCNTF) MSTGRADCNTF
+                         , sum(A.MSTGRADCNTM) MSTGRADCNTM
+                         , sum(A.DRGRADCNT) DRGRADCNT
+                         , sum(A.DRGRADCNTF) DRGRADCNTF
+                         , sum(A.DRGRADCNTM) DRGRADCNTM
+                         , sum(A.GRADCNT2) GRADCNT2
+                         , sum(A.GRADCNTF2) GRADCNTF2
+                         , sum(A.GRADCNTM2) GRADCNTM2
+                         , sum(A.MSTGRADCNT2) MSTGRADCNT2
+                         , sum(A.MSTGRADCNTF2) MSTGRADCNTF2
+                         , sum(A.MSTGRADCNTM2) MSTGRADCNTM2
+                         , sum(A.DRGRADCNT2) DRGRADCNT2
+                         , sum(A.DRGRADCNTF2) DRGRADCNTF2
+                         , sum(A.DRGRADCNTM2) DRGRADCNTM2
+                         , sum(A.GRADCNT8) GRADCNT8
+                         , sum(A.GRADCNTF8) GRADCNTF8
+                         , sum(A.GRADCNTM8) GRADCNTM8
+                         , sum(A.MSTGRADCNT8) MSTGRADCNT8
+                         , sum(A.MSTGRADCNTF8) MSTGRADCNTF8
+                         , sum(A.MSTGRADCNTM8) MSTGRADCNTM8
+                         , sum(A.DRGRADCNT8) DRGRADCNT8
+                         , sum(A.DRGRADCNTF8) DRGRADCNTF8
+                         , sum(A.DRGRADCNTM8) DRGRADCNTM8
+                      FROM TMGP_GRDPSNCNT A
+                     WHERE SCHCD =  #{SCHCD}
+                       AND ORGCD = #{ORGCD}
+                       AND SURVSEQ = #{SURVSEQ}
+                       AND SURVKINDCD = #{SURVKINDCD}
+                        <if test='sel_dept != null and sel_dept != ""'>
+                            AND DEPTCD IN (  SELECT  DEPTCD FROM TMCM_DEPT  WHERE   SURVSEQ = #{SURVSEQ} AND SURVKINDCD =#{SURVKINDCD} AND UPPER(DEPTNM) LIKE UPPER('%' || #{sel_dept} || '%') )
+                        </if>               
+                        <if test='sel_dayNight != null and sel_dayNight != ""'>
+                            AND DEPTDNCD =   #{sel_dayNight}
+                        </if>
+					group by
+                         A.SURVSEQ 
+                         , A.SURVKINDCD
+                         , A.SCHCD
+                         , A.ORGCD
+                         , A.COLCD
+                         , A.COLNM
+                         , A.DEPTCD
+                         , A.DEPTNM
+                         , A.DEPTDNCD
+
+	</select>		
+	
+	<!--연계인원수  -->
+	<select id="getTargetCnt" parameterType="java.util.Map" resultType="int">
+			SELECT 
+			    --nvl(sum(decode(SCH.UNIGRADECD,1,CNT.GRADCNT + CNT.MSTGRADCNT + CNT.DRGRADCNT,CNT.MSTGRADCNT + CNT.DRGRADCNT)),0)
+			    COUNT(*)
+			FROM 
+			    --TMGP_GRDPSNCNT CNT
+			    TMGP_GRDPSNINFOBF CNT
+			    left outer join tmad_school SCH on CNT.survseq=SCH.survseq and CNT.survkindcd=SCH.survkindcd and CNT.schcd=SCH.schcd and CNT.orgcd=SCH.orgcd
+		 	WHERE 
+					CNT.SURVSEQ = #{SURVSEQ}
+					AND CNT.SURVKINDCD = #{SURVKINDCD}
+					AND CNT.SCHCD = #{SCHCD}
+					AND CNT.ORGCD = #{ORGCD}	 	
+	</select>		
+		
+	
+	
+
+	<delete id="deleteGpRegist" parameterType="java.util.Map">
+	    DELETE FROM TRGP_GRDPSNINFO  
+				WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+	</delete>	
+	
+	
+	
+	<!-- 정보 개별등록 -->
+	<insert id="insertBatchGpRegistOne" parameterType="java.util.Map" flushCache="true">
+		<selectKey resultType="int" keyProperty="STUDENTSEQ2" order="BEFORE">
+	        SELECT NVL(MAX(STUDENTSEQ),0)+1 FROM TRGP_GRDPSNINFO  WHERE SURVSEQ = #{SURVSEQ} AND SURVKINDCD =  #{SURVKINDCD} AND SCHCD = #{SCHCD} AND ORGCD =  #{ORGCD}       
+	    </selectKey>
+				INSERT INTO  TRGP_GRDPSNINFO (
+					SURVSEQ
+					,SURVKINDCD	
+					,SCHCD	
+					,ORGCD	
+					,STUDENTSEQ	
+					,COLCD	
+					,COLNM	
+					,DEPTCD	
+					,DEPTNM	
+					,DNCD	
+					,DETAILDEPTNM	
+					,DEGREECD	
+					,SUBDEPTCD	 
+					,SUBDEPTNM	
+					,MULTIDEPTCD 
+					,MULTIDEPTNM
+					,INYM	 
+					,OUTYM	
+					,OUTGRACE	 
+					,TRANSFERYM	 
+					,TRANSCLOSEYN	 
+					,EXCHANGEYN	 
+					,STUDENTNO	 
+					,UNIQUEKEY	
+					,NAME	
+					,JUMINNO	 
+					,BIRTHYEAR	 
+					,AGE 
+					,SEXCD	 
+					,ADDR	 
+					,ZIPCODE	 
+					,MOBILENO	 
+					,EMAILADDR 
+					,OUTHSCD	
+					,OUTHSNM	 
+					,OVERSEAYN	 
+					,TEACHCERTIYN	 
+					,INTERNSHIPYN	 
+					,DISABLEDYN	 
+					,GRADSCORE	 
+					,TOEIC	
+					,TRUSTYN	
+					,SPCLINYN	
+					,THESISNM	
+					,WORKERID	 
+					,WORKDTHM
+					
+					
+				) VALUES (	    
+					#{SURVSEQ}
+					,#{SURVKINDCD}	
+					,#{SCHCD}
+					,#{ORGCD}
+					,#{STUDENTSEQ2}	
+					,#{COLCD}
+					,#{COLNM}
+					,#{DEPTCD}	
+					,#{DEPTNM}	
+					,#{DNCD}
+					,#{DETAILDEPTNM}	
+					,#{DEGREECD}	
+					,#{SUBDEPTCD}	 
+					,#{SUBDEPTNM}	
+					,#{MULTIDEPTCD} 
+					,#{MULTIDEPTNM}
+					,#{INYM}	 
+					,#{OUTYM}	
+					,#{OUTGRACE}	 
+					,#{TRANSFERYM}	 
+					,#{TRANSCLOSEYN}	 
+					,#{EXCHANGEYN}	 
+					,#{STUDENTNO}	 
+					,#{UNIQUEKEY}	
+					,SP_ENC_FU( #{NAME}	)
+					,SP_ENC_FU( #{JUMINNO} )	 
+					,SP_ENC_FU( #{BIRTHYEAR} )	 
+					,#{AGE} 
+					,#{SEXCD}	 
+					,SP_ENC_FU( #{ADDR} )
+					,#{ZIPCODE}	 
+					,SP_ENC_FU( #{MOBILENO} )	 
+					,SP_ENC_FU( #{EMAILADDR} ) 
+					,#{OUTHSCD}	
+					,#{OUTHSNM}	 
+					,#{OVERSEAYN}	 
+					,#{TEACHCERTIYN}	 
+					,#{INTERNSHIPYN}	 
+					,#{DISABLEDYN}	 
+					,#{GRADSCORE}	 
+					,#{TOEIC}	
+					,#{TRUSTYN}	
+					,#{SPCLINYN}	
+					,#{THESISNM}	
+					,#{WORKERID}	 
+					,SYSDATE				
+				)
+  
+	</insert>		
+
+	<!-- 트랜젝션 목록 -->
+	<select id="selectGpTr" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+				STUDENTNO , SCHCD
+				,ORGCD, JUMINNO
+				,COLCD,DEPTCD  
+				,DNCD
+				,SUBDEPTCD
+				,MULTIDEPTCD
+				FROM TRGP_GRDPSNINFO 
+	 		WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 
+	 			ORDER BY STUDENTSEQ				
+	</select>	
+	
+	<!-- 주민번호 중복 체크 , 주민번호 중복 이면서 입학학기가 동일한경우 , 학생번호 중복 체크 ,학교 + 본분교 + 학기 + 단과대학 + 학과  + 주야구분 유효성 -->
+	<insert id="saveGPError" statementType="CALLABLE" parameterType="java.util.Map"> 
+	{ CALL SP_SAVEERROR_GP_PR(
+	#{SURVSEQ},
+	#{SURVKINDCD},
+	#{SCHCD},
+	#{ORGCD},
+	#{WORKERID}) } 
+	</insert>		
+	
+
+	<!-- 주민번호 중복확인  -->
+	<select id="getJuminCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(JUMINNO)  FROM TRGP_GRDPSNINFO 
+		 	WHERE SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+		 		AND JUMINNO = SP_ENC_FU( #{JUMINNO} )
+	</select>	
+	
+	<!-- 학생번호 중복확인  -->
+	<select id="getStudentNoCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(STUDENTNO)  FROM TRGP_GRDPSNINFO 
+		 	WHERE  SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+		 		AND STUDENTNO = #{STUDENTNO}
+	</select>
+		
+	<!-- 학교 + 본분교 + 단과대학 + 학과  + 주야구분 유효성  -->
+	<select id="getCodeRowCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(SCHCD)  FROM TMGP_GRDPSNCNT
+		 	WHERE  SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+		 		AND COLCD = #{COLCD}
+		 		AND DEPTCD = #{DEPTCD}
+		 		AND DNCD = #{DNCD}
+	</select>
+
+
+	<!-- 복수전공  -->
+	<select id="selectMultCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(DEPTCD)  FROM TMCM_DEPT 
+		 	WHERE SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND DEPTCD = #{MULTIDEPTCD} 
+	</select>
+	<!-- 부전공코드  -->
+	<select id="selectSubDepCdCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(DEPTCD)  FROM TMCM_DEPT 
+		 	WHERE SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND DEPTCD = #{SUBDEPTCD}  
+	</select>	
+
+
+	<!-- 전체 대상자 수  -->
+	<select id="getStudentAllCnt" parameterType="java.util.Map" resultType="int">
+			SELECT SUM(GRADCNT) FROM TMGP_GRDPSNCNT
+		 	WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 	
+	</select>		
+	
+	<!--  학과별 학생수 겁증  -->
+	<select id="getChkInCnt" parameterType="java.util.Map" resultType="int">
+			SELECT COUNT(SCHCD) FROM TRGP_GRDPSNINFO  
+		 	WHERE 
+	 			SURVSEQ = #{SURVSEQ} 
+	 			AND SURVKINDCD = #{SURVKINDCD}
+	 			AND SCHCD = #{SCHCD} 
+	 			AND ORGCD = #{ORGCD} 
+	 			
+	 			AND COLCD = #{COLCD_00} 
+	 			AND DEPTCD = #{DEPTCD_00} 
+	 			AND DNCD = #{DEPTDNCD_00} 
+				<if test=' selKind != null and selKind.equals( "1" )' >
+					AND (  DEGREECD is null   )
+					AND SEXCD = '1' 
+				</if>
+				<if test=' selKind != null and selKind.equals( "2" )' >
+					AND (  DEGREECD is null   )
+					AND SEXCD = '2' 
+				</if>	 			
+				<if test=' selKind != null and selKind.equals( "3" )' >
+					AND  (  SUBSTR(DEGREECD,1,1) ='1'  )
+					AND SEXCD = '1' 
+				</if>
+				<if test=' selKind != null and selKind.equals( "4" )' >
+					AND   (  SUBSTR(DEGREECD,1,1) ='1'  ) 
+					AND SEXCD = '2' 
+				</if>
+				<if test=' selKind != null and selKind.equals( "5" )' >
+					AND   SUBSTR(DEGREECD,1,1) ='2'  
+					AND SEXCD = '1' 
+				</if>
+				<if test=' selKind != null and selKind.equals( "6" )' >
+					AND  SUBSTR(DEGREECD,1,1) ='2'    
+					AND SEXCD = '2' 
+				</if>			 				
+	 				
+	</select>			
+	
+	<select id="setDayNight" parameterType="java.util.Map" resultType="java.util.Map">
+	
+	  			SELECT 
+	  				A.DEPTDNCD
+	  				, SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', A.DEPTDNCD) AS DEPTDNNM
+				  FROM TMGP_GRDPSNCNT A
+				 WHERE 
+					SURVSEQ = #{SURVSEQ}
+					AND SURVKINDCD = #{SURVKINDCD}
+					AND SCHCD = #{SCHCD}
+					AND ORGCD = #{ORGCD}				  
+				  GROUP BY DEPTDNCD
+	</select>		
+	
+	
+	
+	
+ 	<!-- 마스터 삭제 -->
+	<delete id="deleteGpRegResult" parameterType="java.util.Map" >
+			DELETE FROM TMGP_GRDPSNINFO   
+ 				WHERE SURVSEQ = #{SURVSEQ}
+				AND SURVKINDCD = #{SURVKINDCD}
+				AND SCHCD = #{SCHCD}
+				AND ORGCD = #{ORGCD}
+	</delete>	
+	<!-- 제출시 마스터 등록 -->
+	<insert id="insertGPMaster" parameterType="java.util.Map" flushCache="true">
+
+				INSERT INTO  TMGP_GRDPSNINFO (
+					SURVSEQ
+					,SURVKINDCD	
+					,SCHCD	
+					,ORGCD	
+					,COLCD	
+					,COLNM	
+					,DEPTCD	
+					,DEPTNM	
+					,DNCD	
+					,DETAILDEPTNM	
+					,DEGREECD	
+					,SUBDEPTCD	 
+					,SUBDEPTNM	
+					,MULTIDEPTCD 
+					,MULTIDEPTNM
+					,INYM	 
+					,OUTYM	
+					,OUTGRACE	 
+					,TRANSFERYM	 
+					,TRANSCLOSEYN	 
+					,EXCHANGEYN	 
+					,STUDENTNO	 
+					,UNIQUEKEY	
+					,NAME	
+					,JUMINNO	 
+					,BIRTHYEAR	 
+					,AGE 
+					,SEXCD	 
+					,ADDR	 
+					,ZIPCODE	 
+					,MOBILENO	 
+					,EMAILADDR 
+					,OUTHSCD	
+					,OUTHSNM	 
+					,OVERSEAYN	 
+					,TEACHCERTIYN	 
+					,INTERNSHIPYN	 
+					,DISABLEDYN	 
+					,GRADSCORE	 
+					,TOEIC	
+					,TRUSTYN	
+					,SPCLINYN	
+					,THESISNM	
+					,WORKERID	 
+					,WORKDTHM
+					
+					
+				) VALUES (	    
+					#{SURVSEQ}
+					,#{SURVKINDCD}	
+					,#{SCHCD}
+					,#{ORGCD}
+					,#{COLCD}
+					,#{COLNM}
+					,#{DEPTCD}	
+					,#{DEPTNM}	
+					,#{DNCD}
+					,#{DETAILDEPTNM}	
+					,#{DEGREECD}	
+					,#{SUBDEPTCD}	 
+					,#{SUBDEPTNM}	
+					,#{MULTIDEPTCD} 
+					,#{MULTIDEPTNM}
+					,#{INYM}	 
+					,#{OUTYM}	
+					,#{OUTGRACE}	 
+					,#{TRANSFERYM}	 
+					,#{TRANSCLOSEYN}	 
+					,#{EXCHANGEYN_YN}	 
+					,#{STUDENTNO}	 
+					,#{UNIQUEKEY}	
+					, #{NAME_NM}	
+					, #{JUMINNO} 	 
+					, #{BIRTHYEAR_NM} 	 
+					,#{AGE} 
+					,#{SEXCD_CD}	 
+					, #{ADDR} 
+					,#{ZIPCODE}	 
+					, #{MOBILENO} 	 
+					, #{EMAILADDR} 
+					,#{OUTHSCD}	
+					,#{OUTHSNM}	 
+					,#{OVERSEAYN}	 
+					,#{TEACHCERTIYN}	 
+					,#{INTERNSHIPYN}	 
+					,#{DISABLEDYN}	 
+					,#{GRADSCORE}	 
+					,#{TOEIC}	
+					,#{TRUSTYN}	
+					,#{SPCLINYN}	
+					,#{THESISNM}	
+					,#{WORKERID}	 
+					,SYSDATE				
+				)
+  
+	</insert>		
+	
+	<select id="listQuestionNullChk" parameterType="java.util.Map" resultType="java.util.Map">
+		select 
+			count(*) AS FILE_NULL_CNT
+		from
+			tmcm_survey_main MAIN
+			, tmcm_survey_answer ANS
+		where
+			MAIN.survey_code=ANS.survey_code
+			and MAIN.survey_status='1'
+			and ANS.workerid=#{CHK_USERID}
+		group by
+    		ANS.workerid
+	</select>		
+	
+	<select id="listDept" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T1.SURVSEQ , T1.SURVKINDCD , T1.SCHCD , T1.ORGCD , T1.DEPTCD, T2.DEPTNM
+			FROM
+				TMGP_GRDPSNINFOBF T1, TMCM_DEPT T2
+			WHERE
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				AND T1.SURVSEQ = T2.SURVSEQ 
+				AND T1.SURVKINDCD = T2.SURVKINDCD 
+				AND T1.DEPTCD = T2.DEPTCD
+			GROUP BY
+				T1.SURVSEQ, T1.SURVKINDCD, T1.SCHCD, T1.ORGCD, T1.DEPTCD, T2.DEPTNM
+	</select>	
+	
+	<select id="listDncd" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+				T2.CD , T2.CDNM
+			FROM
+				TMGP_GRDPSNINFOBF T1, TCCM_CODE T2
+			WHERE
+				T1.SURVSEQ = #{SURVSEQ}
+				AND T1.SURVKINDCD = #{SURVKINDCD}
+				AND T1.SCHCD = #{SCHCD}
+				AND T1.ORGCD = #{ORGCD}
+				AND T1.SURVSEQ = T2.SURVSEQ 
+				AND T1.SURVKINDCD = T2.SURVKINDCD 
+				AND T1.DNCD = T2.CD
+				AND T2.CDTYPE='1004'
+				AND T2.CD != 'GROUPCD'
+			GROUP BY
+				T1.SURVSEQ, T1.SURVKINDCD, T2.CD, T2.CDNM
+			ORDER BY T2.CD 
+	</select>	
+	
+	<select id="selectGpBFList" parameterType="java.util.Map" resultType="java.util.Map">
+		select
+			(select schnm from tmad_school SCH where SCH.survseq=#{SURVSEQ} and SCH.survkindcd=#{SURVKINDCD} and SCH.schcd=#{SCHCD} and SCH.orgcd=#{ORGCD}) schnm
+		    ,schcd
+            ,SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD}, '1001', tmgp_grdpsninfobf.ORGCD) AS ORGNM
+		    ,orgcd
+		    ,studentno
+		    ,uniquekey
+		    ,colcd
+		    ,colnm
+		    ,deptcd
+		    ,deptnm
+		    ,dncd
+		    , SP_CODENAME_FU(#{SURVSEQ}, #{SURVKINDCD},'1004', DNCD) DNNM
+		    
+		    ,degreecd
+		    ,subdeptcd
+		    ,subdeptnm
+		    ,multideptcd
+		    ,multideptnm
+		    ,outgrace
+		    ,transferym
+		    ,transcloseyn
+		    ,exchangeyn
+		    ,sp_dec_fu(juminno) juminno
+		    ,age
+		    ,sexcd
+		    ,outhscd
+		    ,outhsnm
+		    ,overseayn
+		    ,teachcertiyn
+		    ,gradscore
+		    
+		    ,sp_dec_fu(name) name
+		    ,sp_dec_fu(birthyear) birthyear
+			, CASE SEXCD
+			        WHEN  '1'  THEN '남자'
+			        WHEN  '2'  THEN '여자'
+			        ELSE ''  
+			END SEXCDCNV	
+			, CASE EXCHANGEYN
+			        WHEN  '1'  THEN '예'
+			        WHEN  '2'  THEN '아니요'
+			        ELSE ''  
+			END EXCHANGEYNCNV
+		    ,inym
+		    ,outym
+		from 
+		    tmgp_grdpsninfobf
+		where 
+		    survseq=#{SURVSEQ} 
+		    and survkindcd=#{SURVKINDCD} 
+		    and schcd=#{SCHCD}
+		    and orgcd=#{ORGCD}
+            <if test='sel_dept != null and sel_dept != ""'>
+	            AND DEPTCD=#{sel_dept}
+			</if>   		    
+            <if test='sel_dayNight != null and sel_dayNight != ""'>
+	            AND DNCD=#{sel_dayNight}
+			</if>   		    
+		order by uniquekey asc
+
+	</select>	
+
+</mapper>	
+	

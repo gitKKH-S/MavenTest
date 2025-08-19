@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AdSurvPrgsMapper">
+	
+	<select id="listSurvPrgs" parameterType="java.util.Map" resultType="java.util.Map">
+		WITH BASE AS (
+			SELECT SURVSEQ
+				,SURVKINDCD
+				,SCHKINDCD
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,'0527', SCHKINDCD) AS SCHKINDNM
+				,SURVSTRTDT
+				,SURVENDDT
+				,SCHNM
+				,SCHCD
+				,ORGCD
+				,SURVPROSTATUSCD
+				,SURVPROSTATUSDTHM
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,DECODE(SURVKINDCD,'AG','0083','GP','0081','FP','0082'), SURVPROSTATUSCD) AS SURVPROSTATUSNM
+				,SP_CODENAME_FU(SURVSEQ, SURVKINDCD,'1001', ORGCD) AS ORGNM
+				,WORKERID
+			  FROM TMAD_SCHOOL 
+			 WHERE SURVSEQ = #{SURVSEQ}		 
+			<if test="SURVKINDCD != null">
+				AND SURVKINDCD = #{SURVKINDCD}
+			</if>
+			<if test="SCHKINDCD != null">
+				AND SCHKINDCD = #{SCHKINDCD}
+			</if>			
+			<if test="SCHNM != null">
+				AND SCHNM LIKE '%' || #{SCHNM} || '%'
+			</if>
+			 ORDER BY DECODE(SUBSTR(SCHNM,0,4),'KEDI','A',SCHNM) ASC 
+		)
+		SELECT * FROM 
+			(
+				SELECT ROWNUM AS RNUM, T1.* FROM BASE T1
+			)
+		WHERE RNUM BETWEEN #{START} AND #{END}
+	</select>	
+	
+	<select id="listSurvPrgsTOTALPAGECNT" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT COUNT(*) TOTALPAGECNT
+			  FROM TMAD_SCHOOL 
+			 WHERE SURVSEQ = #{SURVSEQ}		 
+			<if test="SURVKINDCD != null">
+				AND SURVKINDCD = #{SURVKINDCD}
+			</if>
+			<if test="SCHKINDCD != null">
+				AND SCHKINDCD = #{SCHKINDCD}
+			</if>			
+			<if test="SCHNM != null">
+				AND SCHNM LIKE '%' || #{SCHNM} || '%'
+			</if>
+	</select>
+		
+	<update id="updateSurvPrgs" parameterType="java.util.Map">
+		    UPDATE TMAD_SCHOOL 
+		    SET SURVSTRTDT = #{SURVSTRTDT}
+				,SURVENDDT = #{SURVENDDT}
+				,MODIFIERID = #{WORKERID}
+				,MODDTHM = SYSDATE
+			WHERE SURVSEQ = #{SURVSEQ}							
+			AND SURVKINDCD = #{SURVKINDCD}
+			AND SCHCD = #{SCHCD}
+			AND ORGCD = #{ORGCD}
+	</update>
+
+</mapper>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SwissSymLogDQM">
+	
+		
+	<insert id="insertPageLog" parameterType="egovframework.com.cmm.LoginVO">
+		<![CDATA[
+			INSERT INTO SGSYLOG00TT
+			(USER_ID, PAGE_ID, JS_SG, JOJIK_CD, HAN_JOJIK_NM, JS_IP, JS_DT)
+			VALUES
+			(NVL(#{id},'X'), NVL(#{url},'X'), SYSDATE, NVL(#{orgnztId},'X'), NVL(#{orgnztNm},'X'), NVL(#{ip},'X'), TO_CHAR(SYSDATE,'YYYYMMDD'))
+		]]>
+    </insert>
+	
+	<select id="selectPageLog" parameterType="java.util.Map" resultType="java.util.Map">
+            SELECT A.USER_ID,
+                   B.USER_NM,
+                   B.USER_GB,
+                   A.PAGE_ID,
+                   C.PAGE_NM,
+                   C.SYSTEM_ID,
+                   TO_CHAR(A.JS_SG,'YYYY-MM-DD HH24:MI:SS') AS JS_SG,
+                   A.JOJIK_CD,
+                   A.HAN_JOJIK_NM,
+                   A.JS_IP,
+                   A.JS_DT
+              FROM SGSYLOG00TT A, SGSYUSER00TT B, SGGHPAGE00TT C
+             WHERE 1=1
+               AND A.USER_ID = B.USER_ID
+               AND A.PAGE_ID = C.PAGE_ID
+			   
+			   <if test="FROM_DT != null">
+			   AND A.JS_SG &gt;= TO_DATE(#{FROM_DT} || '000000','YYYYMMDDHH24MISS')
+			   </if>
+
+			   <if test="TO_DT != null">
+			   AND A.JS_SG &lt;= TO_DATE(#{FROM_TO} || '245959','YYYYMMDDHH24MISS')
+			   </if>
+
+			   <if test="USER_GB != null">
+			   AND B.USER_GB = #{PAGE_NM}
+			   </if>
+
+			   <if test="JS_IP != null">
+			   AND A.JS_IP LIKE '%'||#{JS_IP}||'%'
+			   </if>
+
+			   <if test="JOJIK_NM != null">
+			   AND EXISTS(
+			   				SELECT ''
+			   				  FROM SGORJOJM00TT F
+			   				 WHERE F.JOJIK_CD = A.JOJIK_CD
+			   				   AND F.HAN_JOJIK_NM LIKE '%'||#{JOJIK_NM}||'%'
+			   			 )
+			   </if>
+
+			   <if test="USER_NM != null">
+			   AND B.USER_NM = #{USER_NM}
+			   </if>
+
+			   <if test="PAGE_NM != null">
+			   AND C.PAGE_NM LIKE '%'||#{PAGE_NM}||'%'
+			   </if>
+			   
+			 ORDER BY A.JS_SG DESC
+	</select>
+    
+
+</mapper>
